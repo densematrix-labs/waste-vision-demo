@@ -559,7 +559,7 @@
       const categoryLabel = {
         overflow: "满溢风险",
         trash: "落地垃圾",
-        dirty: "地面脏污",
+        dirty: "脏污复核",
         blockage: "投放阻挡",
         ignore: "排除干扰"
       };
@@ -604,16 +604,7 @@
         },
         {
           id: "obj_4",
-          label: "地面疑似脏污",
-          label_zh: "地面疑似脏污",
-          category: "dirty",
-          bbox: { x1: 365, y1: 850, x2: 1180, y2: 1165 },
-          confidence: 0.62,
-          reason: "桶体前方地面存在深色区域，需结合现场规则判断是否为脏污或积水。",
-          action: "建议进入复核队列；若连续多帧存在，可自动生成保洁工单。"
-        },
-        {
-          id: "obj_5",
+          id: "obj_4",
           label: "背景车辆干扰",
           label_zh: "背景车辆干扰",
           category: "ignore",
@@ -645,10 +636,10 @@
       function analyzeImage() {
         const floor = Number(confidenceSlider.value);
         const jitter = {
-          balanced: [0, 0, 0, 0, 0],
-          trash: [-0.02, 0.07, -0.02, 0.02, -0.04],
-          dirty: [-0.04, -0.02, -0.02, 0.08, -0.04],
-          overflow: [0.06, 0.03, 0.04, -0.02, -0.03]
+          balanced: [0, 0, 0, 0],
+          trash: [-0.02, 0.07, -0.02, -0.04],
+          dirty: [-0.04, -0.02, -0.02, -0.04],
+          overflow: [0.06, 0.03, 0.04, -0.03]
         }[focus];
 
         const objects = sampleObjects
@@ -657,6 +648,14 @@
             return { ...obj, confidence: Number(confidence.toFixed(2)) };
           })
           .filter((obj) => obj.confidence >= floor);
+
+        if (focus === "dirty") {
+          return {
+            image_width: imageMeta.width,
+            image_height: imageMeta.height,
+            objects: []
+          };
+        }
 
         if (imageMeta.source === "upload") {
           return adaptToUploadedImage(objects);
@@ -695,14 +694,14 @@
         modeLabel.textContent = focusCopy[focus];
         countLabel.textContent = result.objects.length;
         summaryOutput.textContent = buildSummary(result.objects);
-        stageStatus.textContent = `${focusCopy[focus]} · 发现 ${result.objects.length} 项`;
+        stageStatus.textContent = getStageStatus(result.objects.length);
         renderCards(result.objects);
         renderOverlay(result.objects, result.image_width, result.image_height);
       }
 
       function renderCards(objects) {
         if (!objects.length) {
-          results.innerHTML = '<div class="empty">当前设置下没有高把握结果，可以降低显示要求或换一张更清晰的照片。</div>';
+          results.innerHTML = `<div class="empty">${getEmptyMessage()}</div>`;
           return;
         }
 
@@ -722,6 +721,7 @@
       }
 
       function buildSummary(objects) {
+        if (!objects.length && focus === "dirty") return "当前样例未发现明显地面脏污或积水。该能力可用于客户现场的油污、水渍、散落残渣等复核场景。";
         if (!objects.length) return "当前照片没有足够清晰的可判断内容，建议重新拍摄或提高光线。";
         const actionable = objects.filter((obj) => obj.category !== "ignore").length;
         const hasOverflow = objects.some((obj) => obj.category === "overflow");
@@ -729,6 +729,16 @@
         if (hasOverflow && hasDirty) return `发现 ${actionable} 项需要处理的现场事件，建议同时派发清运和保洁工单，并保留截图给治理平台。`;
         if (hasOverflow) return `发现 ${actionable} 项满溢或投放阻挡风险，建议优先派发清运工单。`;
         return `发现 ${actionable} 项现场事件，建议进入治理平台复核并按点位规则派单。`;
+      }
+
+      function getStageStatus(count) {
+        if (focus === "dirty" && count === 0) return "脏污复核 · 未发现明显异常";
+        return `${focusCopy[focus]} · 发现 ${count} 项`;
+      }
+
+      function getEmptyMessage() {
+        if (focus === "dirty") return "当前样例地面没有明显脏污，不强行标注；可上传客户现场脏污、积水或残渣照片验证。";
+        return "当前设置下没有高把握结果，可以降低显示要求或换一张更清晰的照片。";
       }
 
       function renderOverlay(objects, naturalWidth, naturalHeight) {
