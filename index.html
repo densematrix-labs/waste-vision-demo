@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>智能垃圾分类演示</title>
+    <title>垃圾厢房智能巡检演示</title>
     <style>
       :root {
         color-scheme: dark;
@@ -455,12 +455,12 @@
       <header>
         <div class="header-inner">
           <div>
-            <h1>智能垃圾分类演示</h1>
-            <p class="subtitle">上传或拍摄一张垃圾照片，系统自动标出物品并给出分类建议。</p>
+            <h1>垃圾厢房智能巡检演示</h1>
+            <p class="subtitle">接入现场摄像头截图，自动发现满溢、落地垃圾、地面脏污和阻挡风险。</p>
           </div>
           <div class="status-strip">
-            <span class="chip">场景 <strong>垃圾分类</strong></span>
-            <span class="chip">照片 <strong>真实样例</strong></span>
+            <span class="chip">场景 <strong>垃圾厢房</strong></span>
+            <span class="chip">照片 <strong>真实巡检</strong></span>
             <span class="chip">状态 <strong id="modeLabel">可演示</strong></span>
           </div>
         </div>
@@ -469,32 +469,32 @@
       <main>
         <section class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">照片</h2>
+            <h2 class="panel-title">巡检画面</h2>
           </div>
           <div class="panel-body">
             <div class="control-group">
-              <label>上传照片</label>
+              <label>上传摄像头截图</label>
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
-                  <b>选择一张现场照片</b>
-                  <span>也可以直接使用右侧真实样例</span>
+                  <b>选择一张现场截图</b>
+                  <span>也可以直接使用右侧真实巡检样例</span>
                 </div>
               </div>
             </div>
 
             <div class="control-group">
-              <label>识别重点</label>
+              <label>巡检重点</label>
               <div class="segmented" id="focusButtons">
-                <button class="active" data-focus="balanced">均衡识别</button>
-                <button data-focus="recyclable">可回收优先</button>
-                <button data-focus="hazardous">风险物优先</button>
-                <button data-focus="review">人工复核优先</button>
+                <button class="active" data-focus="balanced">综合巡检</button>
+                <button data-focus="trash">落地垃圾</button>
+                <button data-focus="dirty">地面脏污</button>
+                <button data-focus="overflow">满溢优先</button>
               </div>
             </div>
 
             <div class="control-group">
-              <label>只显示把握较高的结果</label>
+              <label>只显示需要处理的风险</label>
               <div class="slider-row">
                 <input id="confidenceSlider" type="range" min="0.2" max="0.95" step="0.05" value="0.45" />
                 <span class="chip"><strong id="confidenceValue">0.45</strong></span>
@@ -502,46 +502,46 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="detectButton">开始分析</button>
-              <button class="secondary" id="sampleButton">恢复样例照片</button>
+              <button class="primary" id="detectButton">开始巡检</button>
+              <button class="secondary" id="sampleButton">恢复巡检样例</button>
             </div>
 
             <div class="control-group">
-              <label>分类颜色</label>
+              <label>事件颜色</label>
               <div class="legend" id="legend"></div>
             </div>
 
-            <p class="footnote">样例照片来源：Wikimedia Commons / epSos.de，CC BY 2.0。演示结果用于展示产品形态，现场落地时可接入客户自己的分类规则。</p>
+            <p class="footnote">样例照片为公开真实照片，来源：Wikimedia Commons，Public Domain。演示结果用于展示产品形态，现场落地时可接入客户自己的摄像头和治理规则。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">样例照片已就绪</span></div>
-            <span class="chip"><strong id="imageSize">1600 × 984</strong></span>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">巡检样例已就绪</span></div>
+            <span class="chip"><strong id="imageSize">1600 × 1200</strong></span>
           </div>
           <div class="image-shell" id="imageFrame">
-              <img id="sampleImage" src="./sample-photo.jpg" alt="真实垃圾分类样例照片" />
-              <img id="sourceImage" alt="上传的垃圾照片" hidden />
+              <img id="sampleImage" src="./scene-overflow.jpg" alt="真实垃圾厢房巡检样例照片" />
+              <img id="sourceImage" alt="上传的巡检截图" hidden />
               <div id="overlay"></div>
           </div>
         </section>
 
         <section class="panel right">
           <div class="panel-header">
-            <h2 class="panel-title">分类建议</h2>
+            <h2 class="panel-title">异常事件</h2>
             <span class="chip"><strong id="countLabel">0</strong> 项</span>
           </div>
           <div class="panel-body">
             <div class="results" id="results">
-              <div class="empty">开始分析后显示识别结果和处理建议</div>
+              <div class="empty">开始巡检后显示异常事件和处理建议</div>
             </div>
           </div>
           <div class="panel-header">
-            <h2 class="panel-title">现场处理建议</h2>
+            <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <div class="footnote" id="summaryOutput">保持物品清洁、干燥，并按当地规则投放。含电池、药品、化学品等风险物需要单独处理。</div>
+            <div class="footnote" id="summaryOutput">系统发现需要处理的事件后，可自动生成清运、保洁或复核工单，并保留现场截图作为依据。</div>
           </div>
         </section>
       </main>
@@ -549,83 +549,83 @@
 
     <script>
       const colors = {
-        recyclable: "#6ee7d8",
-        hazardous: "#ff6b5f",
-        kitchen: "#f3c969",
-        residual: "#b79cff",
-        other: "#7ab7ff"
+        overflow: "#ff6b5f",
+        trash: "#f3c969",
+        dirty: "#b79cff",
+        blockage: "#6ee7d8",
+        ignore: "#7ab7ff"
       };
 
       const categoryLabel = {
-        recyclable: "可回收物",
-        hazardous: "有害垃圾",
-        kitchen: "厨余垃圾",
-        residual: "其他垃圾",
-        other: "干扰物"
+        overflow: "满溢风险",
+        trash: "落地垃圾",
+        dirty: "地面脏污",
+        blockage: "投放阻挡",
+        ignore: "排除干扰"
       };
 
       const focusCopy = {
-        balanced: "均衡识别",
-        recyclable: "可回收优先",
-        hazardous: "风险物优先",
-        review: "人工复核优先"
+        balanced: "综合巡检",
+        trash: "落地垃圾",
+        dirty: "地面脏污",
+        overflow: "满溢优先"
       };
 
       const sampleObjects = [
         {
           id: "obj_1",
-          label: "饮料罐回收桶",
-          label_zh: "饮料罐",
-          category: "recyclable",
-          bbox: { x1: 26, y1: 87, x2: 530, y2: 950 },
-          confidence: 0.88,
-          reason: "照片中左侧黄色区域标识为饮料罐，适合进入金属回收流程。",
-          action: "投放前尽量倒空液体，避免污染其他可回收物。"
+          label: "垃圾桶满溢",
+          label_zh: "垃圾桶满溢",
+          category: "overflow",
+          bbox: { x1: 555, y1: 438, x2: 1188, y2: 665 },
+          confidence: 0.91,
+          reason: "投放口附近已有垃圾袋外露，继续投放可能造成满溢。",
+          action: "建议生成清运工单，并要求保洁人员到场处理。"
         },
         {
           id: "obj_2",
-          label: "玻璃与塑料瓶回收桶",
-          label_zh: "玻璃与塑料瓶",
-          category: "recyclable",
-          bbox: { x1: 550, y1: 89, x2: 1091, y2: 960 },
-          confidence: 0.9,
-          reason: "中间红色区域清楚标注玻璃瓶与塑料瓶，适合集中回收。",
-          action: "建议清空瓶内残留，瓶盖和瓶身按当地规则分开或一起投放。"
+          label: "小包垃圾外露",
+          label_zh: "小包垃圾外露",
+          category: "trash",
+          bbox: { x1: 600, y1: 505, x2: 735, y2: 600 },
+          confidence: 0.84,
+          reason: "左侧投放口处出现袋装垃圾外露，存在掉落到地面的风险。",
+          action: "建议安排巡检人员复位或清理，并记录点位照片。"
         },
         {
           id: "obj_3",
-          label: "纸类回收桶",
-          label_zh: "纸类",
-          category: "recyclable",
-          bbox: { x1: 1120, y1: 88, x2: 1565, y2: 946 },
-          confidence: 0.86,
-          reason: "右侧蓝色区域标识为纸类，适合投放纸张、纸袋、纸盒等。",
-          action: "纸类需要保持干燥；被油污浸透的纸张不建议进入纸类回收。"
+          label: "投放口阻挡",
+          label_zh: "投放口阻挡",
+          category: "blockage",
+          bbox: { x1: 972, y1: 486, x2: 1188, y2: 612 },
+          confidence: 0.8,
+          reason: "右侧投放口被垃圾袋遮挡，可能影响居民正常投放。",
+          action: "建议派发保洁处理，并在工单中标注“阻挡投放口”。"
         },
         {
           id: "obj_4",
-          label: "投放口",
-          label_zh: "投放口",
-          category: "other",
-          bbox: { x1: 197, y1: 158, x2: 342, y2: 303 },
-          confidence: 0.64,
-          reason: "投放口区域可能影响拍照角度，系统可提示用户重新取景。",
-          action: "现场拍摄时建议避开强反光和遮挡，让物品主体完整出现在画面中。"
+          label: "地面疑似脏污",
+          label_zh: "地面疑似脏污",
+          category: "dirty",
+          bbox: { x1: 365, y1: 850, x2: 1180, y2: 1165 },
+          confidence: 0.62,
+          reason: "桶体前方地面存在深色区域，需结合现场规则判断是否为脏污或积水。",
+          action: "建议进入复核队列；若连续多帧存在，可自动生成保洁工单。"
         },
         {
           id: "obj_5",
-          label: "风险提醒",
-          label_zh: "风险提醒",
-          category: "hazardous",
-          bbox: { x1: 735, y1: 160, x2: 881, y2: 300 },
-          confidence: 0.52,
-          reason: "当前样例没有明确电池、药品或化学品，系统保留风险提醒能力。",
-          action: "如果现场出现电池、药品、喷雾罐等，应单独提示并引导到专门回收点。"
+          label: "背景车辆干扰",
+          label_zh: "背景车辆干扰",
+          category: "ignore",
+          bbox: { x1: 785, y1: 288, x2: 1185, y2: 455 },
+          confidence: 0.58,
+          reason: "画面远处车辆不属于治理目标，应作为干扰内容排除。",
+          action: "系统只对配置区域内的事件生成工单，减少误报。"
         }
       ];
 
       let focus = "balanced";
-      let imageMeta = { width: 1600, height: 984, source: "sample" };
+      let imageMeta = { width: 1600, height: 1200, source: "sample" };
       let lastResult = null;
 
       const sampleImage = document.getElementById("sampleImage");
@@ -646,9 +646,9 @@
         const floor = Number(confidenceSlider.value);
         const jitter = {
           balanced: [0, 0, 0, 0, 0],
-          recyclable: [0.04, 0.04, 0.04, -0.02, -0.02],
-          hazardous: [-0.01, -0.01, -0.01, -0.02, 0.08],
-          review: [0.01, -0.02, 0.01, 0.05, 0.03]
+          trash: [-0.02, 0.07, -0.02, 0.02, -0.04],
+          dirty: [-0.04, -0.02, -0.02, 0.08, -0.04],
+          overflow: [0.06, 0.03, 0.04, -0.02, -0.03]
         }[focus];
 
         const objects = sampleObjects
@@ -670,8 +670,8 @@
       }
 
       function adaptToUploadedImage(objects) {
-        const scaleX = imageMeta.width / 1280;
-        const scaleY = imageMeta.height / 820;
+        const scaleX = imageMeta.width / 1600;
+        const scaleY = imageMeta.height / 1200;
         return {
           image_width: imageMeta.width,
           image_height: imageMeta.height,
@@ -723,10 +723,12 @@
 
       function buildSummary(objects) {
         if (!objects.length) return "当前照片没有足够清晰的可判断内容，建议重新拍摄或提高光线。";
-        const risky = objects.some((obj) => obj.category === "hazardous");
-        const recyclableCount = objects.filter((obj) => obj.category === "recyclable").length;
-        if (risky) return `识别到 ${recyclableCount} 类可回收目标，并保留风险物提醒。现场投放时应优先分离电池、药品、喷雾罐等特殊物品。`;
-        return `识别到 ${recyclableCount} 类可回收目标。建议保持物品清洁、干燥，并按当地分类规则投放。`;
+        const actionable = objects.filter((obj) => obj.category !== "ignore").length;
+        const hasOverflow = objects.some((obj) => obj.category === "overflow");
+        const hasDirty = objects.some((obj) => obj.category === "dirty");
+        if (hasOverflow && hasDirty) return `发现 ${actionable} 项需要处理的现场事件，建议同时派发清运和保洁工单，并保留截图给治理平台。`;
+        if (hasOverflow) return `发现 ${actionable} 项满溢或投放阻挡风险，建议优先派发清运工单。`;
+        return `发现 ${actionable} 项现场事件，建议进入治理平台复核并按点位规则派单。`;
       }
 
       function renderOverlay(objects, naturalWidth, naturalHeight) {
@@ -762,10 +764,10 @@
         sourceImage.hidden = true;
         sampleImage.hidden = false;
         imageShell.classList.remove("sample-mode");
-        imageFrame.style.aspectRatio = "1600 / 984";
-        imageMeta = { width: 1600, height: 984, source: "sample" };
-        imageSize.textContent = "1600 × 984";
-        stageStatus.textContent = "样例照片已就绪";
+        imageFrame.style.aspectRatio = "1600 / 1200";
+        imageMeta = { width: 1600, height: 1200, source: "sample" };
+        imageSize.textContent = "1600 × 1200";
+        stageStatus.textContent = "巡检样例已就绪";
         renderResult(analyzeImage());
       }
 
