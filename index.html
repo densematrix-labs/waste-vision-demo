@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>垃圾厢房智能巡检演示</title>
+    <title>垃圾投放点智能巡检演示</title>
     <style>
       :root {
         color-scheme: dark;
@@ -19,7 +19,6 @@
         --amber: #f3c969;
         --red: #ff6b5f;
         --blue: #7ab7ff;
-        --violet: #b79cff;
       }
 
       * {
@@ -40,8 +39,7 @@
       }
 
       button,
-      input,
-      select {
+      input {
         font: inherit;
       }
 
@@ -67,17 +65,25 @@
         align-items: center;
       }
 
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
       h1 {
-        margin: 0;
+        margin-bottom: 8px;
         font-size: clamp(22px, 3vw, 36px);
         letter-spacing: 0;
-        line-height: 1;
+        line-height: 1.05;
       }
 
       .subtitle {
-        margin: 8px 0 0;
+        margin-bottom: 0;
         color: var(--muted);
         font-size: 13px;
+        line-height: 1.5;
       }
 
       .status-strip {
@@ -107,7 +113,7 @@
         margin: 0 auto;
         padding: 18px 22px 28px;
         display: grid;
-        grid-template-columns: 310px minmax(360px, 1fr) 360px;
+        grid-template-columns: 310px minmax(360px, 1fr) 380px;
         gap: 16px;
       }
 
@@ -145,7 +151,8 @@
         margin-bottom: 18px;
       }
 
-      label {
+      label,
+      .eyebrow {
         color: var(--muted);
         font-size: 12px;
       }
@@ -218,25 +225,39 @@
         color: var(--cyan);
       }
 
-      .slider-row {
+      .signal-list,
+      .legend,
+      .results {
         display: grid;
-        grid-template-columns: 1fr 42px;
         gap: 10px;
-        align-items: center;
       }
 
-      input[type="range"] {
-        accent-color: var(--lime);
-      }
-
-      .legend {
+      .signal {
         display: grid;
-        gap: 9px;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(20, 34, 31, 0.72);
+        font-size: 12px;
+      }
+
+      .signal strong {
+        font-size: 13px;
+      }
+
+      .signal span {
+        color: var(--muted);
+      }
+
+      .signal b {
+        color: var(--lime);
       }
 
       .legend-item {
         display: grid;
-        grid-template-columns: 12px 1fr auto;
+        grid-template-columns: 12px 1fr;
         gap: 9px;
         align-items: center;
         font-size: 12px;
@@ -252,7 +273,7 @@
       .stage {
         min-height: 690px;
         display: grid;
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto auto 1fr;
       }
 
       .stage-header {
@@ -280,13 +301,35 @@
         box-shadow: 0 0 20px rgba(184, 242, 93, 0.65);
       }
 
+      .image-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 12px 14px 0;
+      }
+
+      .image-tabs button {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(20, 34, 31, 0.8);
+        color: var(--muted);
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      .image-tabs button.active {
+        border-color: var(--lime);
+        color: #111a0f;
+        background: var(--lime);
+        font-weight: 800;
+      }
+
       .image-shell {
         position: relative;
         margin: 14px;
         width: calc(100% - 28px);
-        aspect-ratio: 1280 / 820;
+        aspect-ratio: 16 / 9;
         min-height: 0;
-        display: block;
         background:
           linear-gradient(rgba(61, 111, 101, 0.16) 1px, transparent 1px),
           linear-gradient(90deg, rgba(61, 111, 101, 0.16) 1px, transparent 1px),
@@ -297,57 +340,25 @@
         overflow: hidden;
       }
 
-      .image-frame {
-        display: contents;
-      }
-
-      #sampleImage,
-      #sourceImage {
+      #sceneImage {
         display: block;
-        position: absolute;
-        inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        z-index: 1;
       }
 
-      #sampleImage[hidden],
-      #sourceImage[hidden] {
-        display: none;
-      }
-
-      #overlay {
+      .image-caption {
         position: absolute;
-        inset: 0;
-        pointer-events: none;
-        width: 100%;
-        height: 100%;
-        z-index: 2;
-      }
-
-      .bbox {
-        position: absolute;
-        border: 2px solid;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65), 0 0 18px rgba(184, 242, 93, 0.2);
-      }
-
-      .bbox-label {
-        position: absolute;
-        top: -28px;
-        left: -2px;
-        padding: 5px 7px;
-        border-radius: 5px 5px 5px 0;
-        background: rgba(5, 9, 8, 0.92);
+        left: 12px;
+        bottom: 12px;
+        max-width: min(560px, calc(100% - 24px));
+        padding: 8px 10px;
+        border-radius: 6px;
         color: var(--text);
-        font-size: 11px;
-        white-space: nowrap;
-        border: 1px solid currentColor;
-      }
-
-      .results {
-        display: grid;
-        gap: 10px;
+        background: rgba(5, 9, 8, 0.76);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       .object-card {
@@ -395,27 +406,14 @@
         overflow-wrap: anywhere;
       }
 
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-        word-break: break-word;
-        color: #d8fff1;
+      .footnote {
+        color: var(--muted);
         font-size: 11px;
         line-height: 1.55;
       }
 
-      .empty {
-        color: var(--muted);
-        border: 1px dashed var(--line);
-        border-radius: 8px;
-        padding: 18px;
-        text-align: center;
-      }
-
-      .footnote {
-        color: var(--muted);
-        font-size: 11px;
-        line-height: 1.5;
+      .source-link {
+        color: var(--cyan);
       }
 
       @media (max-width: 1180px) {
@@ -443,10 +441,6 @@
         .stage {
           min-height: auto;
         }
-
-        .image-shell {
-          min-height: 0;
-        }
       }
     </style>
   </head>
@@ -455,13 +449,13 @@
       <header>
         <div class="header-inner">
           <div>
-            <h1>垃圾厢房智能巡检演示</h1>
-            <p class="subtitle">展示摄像头截图进入系统后的巡检、复核和派单流程；现场识别结果需由客户真实数据接入。</p>
+            <h1>垃圾投放点智能巡检演示</h1>
+            <p class="subtitle">用公开固定点位截图展示真实识别结果；现场称重、开盖、清运计划等信号为模拟联动，用来说明客户系统接入后的业务闭环。</p>
           </div>
           <div class="status-strip">
-            <span class="chip">场景 <strong>垃圾厢房</strong></span>
-            <span class="chip">照片 <strong>公开样例</strong></span>
-            <span class="chip">状态 <strong id="modeLabel">等真实结果</strong></span>
+            <span class="chip">画面 <strong>固定机位</strong></span>
+            <span class="chip">识别 <strong>真实结果图</strong></span>
+            <span class="chip">信号 <strong>模拟联动</strong></span>
           </div>
         </div>
       </header>
@@ -469,333 +463,173 @@
       <main>
         <section class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">巡检画面</h2>
+            <h2 class="panel-title">输入与信号</h2>
           </div>
           <div class="panel-body">
             <div class="control-group">
-              <label>上传摄像头截图</label>
+              <label>上传客户现场截图</label>
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
                   <b>选择一张现场截图</b>
-                  <span>也可以先使用右侧公开场景样例</span>
+                  <span>上传后仅展示输入图，不生成假框</span>
                 </div>
               </div>
             </div>
 
             <div class="control-group">
-              <label>巡检重点</label>
-              <div class="segmented" id="focusButtons">
-                <button class="active" data-focus="balanced">综合巡检</button>
-                <button data-focus="trash">落地垃圾</button>
-                <button data-focus="dirty">地面脏污</button>
-                <button data-focus="overflow">满溢优先</button>
+              <label>模拟现场信号</label>
+              <div class="signal-list">
+                <div class="signal"><strong>桶内高度</strong><b>88%</b><span>接近满载</span></div>
+                <div class="signal"><strong>开盖记录</strong><b>频繁</b><span>15 分钟 7 次</span></div>
+                <div class="signal"><strong>清运计划</strong><b>19:30</b><span>距下次清运 14 小时</span></div>
+                <div class="signal"><strong>点位状态</strong><b>需处理</b><span>优先派发清运</span></div>
               </div>
             </div>
 
             <div class="control-group">
-              <label>只显示需要处理的风险</label>
-              <div class="slider-row">
-                <input id="confidenceSlider" type="range" min="0.2" max="0.95" step="0.05" value="0.45" />
-                <span class="chip"><strong id="confidenceValue">0.45</strong></span>
+              <button class="primary" id="resultButton">查看真实识别结果</button>
+              <button class="secondary" id="rawButton">查看原始截图</button>
+            </div>
+
+            <div class="control-group">
+              <label>识别结果来源</label>
+              <div class="legend">
+                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢：来自公开系统结果截图</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落：来自公开系统结果截图</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>箱体：来自公开系统结果截图</span></div>
               </div>
             </div>
 
-            <div class="control-group">
-              <button class="primary" id="detectButton">开始巡检</button>
-              <button class="secondary" id="sampleButton">恢复巡检样例</button>
-            </div>
-
-            <div class="control-group">
-              <label>事件颜色</label>
-              <div class="legend" id="legend"></div>
-            </div>
-
-            <p class="footnote">样例照片来自公开真实照片，仅用于展示页面形态。识别结果必须来自客户现场系统或复核数据，本页不使用手动画框冒充真实结果。</p>
+            <p class="footnote">当前样例来自 Semarang PantauSemar 固定点位公开页面。页面中的识别框来自其公开结果截图，非人工绘制；模拟信号只用于展示联动流程。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">等待真实识别结果</span></div>
-            <span class="chip"><strong id="imageSize">1600 × 1200</strong></span>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">真实识别结果截图</span></div>
+            <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
-          <div class="image-shell" id="imageFrame">
-              <img id="sampleImage" src="./scene-overflow.jpg" alt="真实垃圾厢房巡检样例照片" />
-              <img id="sourceImage" alt="上传的巡检截图" hidden />
-              <div id="overlay"></div>
+          <div class="image-tabs">
+            <button id="showRaw">原始固定机位截图</button>
+            <button id="showResult" class="active">真实识别结果截图</button>
+          </div>
+          <div class="image-shell">
+            <img id="sceneImage" src="./scene-fixed-model.jpg" alt="固定点位垃圾投放点真实识别结果截图" />
+            <div class="image-caption" id="caption">TPS BULU LOR 固定点位，公开系统结果截图：可见满溢、箱体和散落垃圾识别结果。</div>
           </div>
         </section>
 
         <section class="panel right">
           <div class="panel-header">
-            <h2 class="panel-title">异常事件</h2>
-            <span class="chip"><strong id="countLabel">0</strong> 项</span>
+            <h2 class="panel-title">事件判断</h2>
+            <span class="chip"><strong>4</strong> 项</span>
           </div>
           <div class="panel-body">
-            <div class="results" id="results">
-              <div class="empty">接入客户现场识别结果后显示异常事件和处理建议</div>
+            <div class="results">
+              <article class="object-card">
+                <div class="object-top">
+                  <div class="object-name">
+                    <b>满溢风险</b>
+                    <span>公开结果：Sampah_Overload 0.69</span>
+                  </div>
+                  <div class="confidence">69%</div>
+                </div>
+                <div class="reason">固定投放点容器上方垃圾已明显高出箱体，叠加模拟桶内高度 88%。</div>
+                <div class="action-note">建议派发清运工单，并将该点位加入今日优先清运列表。</div>
+              </article>
+
+              <article class="object-card">
+                <div class="object-top">
+                  <div class="object-name">
+                    <b>箱体定位</b>
+                    <span>公开结果：Container 0.69</span>
+                  </div>
+                  <div class="confidence">69%</div>
+                </div>
+                <div class="reason">识别结果定位到垃圾箱主体，可作为满溢判断的固定参照区域。</div>
+                <div class="action-note">部署时将投放口、桶身、地面警戒区预先标定，减少误报。</div>
+              </article>
+
+              <article class="object-card">
+                <div class="object-top">
+                  <div class="object-name">
+                    <b>散落垃圾</b>
+                    <span>公开结果：Sampah_Berserakan 0.41</span>
+                  </div>
+                  <div class="confidence">41%</div>
+                </div>
+                <div class="reason">箱体左侧地面存在散落垃圾，适合触发保洁复核。</div>
+                <div class="action-note">建议同步派发保洁复核任务，处理后回传照片闭环。</div>
+              </article>
+
+              <article class="object-card">
+                <div class="object-top">
+                  <div class="object-name">
+                    <b>远端散落复核</b>
+                    <span>公开结果：Sampah_Berserakan 0.33</span>
+                  </div>
+                  <div class="confidence">33%</div>
+                </div>
+                <div class="reason">远端道路区域出现低把握散落提示，建议进入人工复核，不直接派单。</div>
+                <div class="action-note">低把握事件进入复核池，避免把车辆、阴影或路面反光误判为问题。</div>
+              </article>
             </div>
           </div>
           <div class="panel-header">
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <div class="footnote" id="summaryOutput">当前页面只展示输入截图和业务流程；不展示未经真实识别产生的标注结果。</div>
+            <p class="footnote">结合真实识别结果和模拟现场信号，当前点位建议生成“清运优先 + 保洁复核”两类任务。客户真实部署时，信号来自摄像头、称重/液位、开盖记录、清运计划和用户投放记录。</p>
+            <p class="footnote">来源：<a class="source-link" href="https://pantausemar.semarangkota.go.id/analitik/23a98c3d-401f-476c-8766-b23e4c4babab" target="_blank" rel="noreferrer">PantauSemar TPS BULU LOR 公开固定点位页面</a></p>
           </div>
         </section>
       </main>
     </div>
 
     <script>
-      const colors = {
-        overflow: "#ff6b5f",
-        trash: "#f3c969",
-        dirty: "#b79cff",
-        blockage: "#6ee7d8",
-        ignore: "#7ab7ff"
-      };
-
-      const categoryLabel = {
-        overflow: "满溢风险",
-        trash: "落地垃圾",
-        dirty: "脏污复核",
-        blockage: "投放阻挡",
-        ignore: "排除干扰"
-      };
-
-      const focusCopy = {
-        balanced: "综合巡检",
-        trash: "落地垃圾",
-        dirty: "地面脏污",
-        overflow: "满溢优先"
-      };
-
-      const sampleObjects = [];
-
-      let focus = "balanced";
-      let imageMeta = { width: 1600, height: 1200, source: "sample" };
-      let lastResult = null;
-
-      const sampleImage = document.getElementById("sampleImage");
-      const sourceImage = document.getElementById("sourceImage");
-      const imageFrame = document.getElementById("imageFrame");
-      const imageShell = document.querySelector(".image-shell");
-      const overlay = document.getElementById("overlay");
-      const results = document.getElementById("results");
-      const summaryOutput = document.getElementById("summaryOutput");
-      const countLabel = document.getElementById("countLabel");
-      const imageSize = document.getElementById("imageSize");
+      const sceneImage = document.getElementById("sceneImage");
+      const caption = document.getElementById("caption");
       const stageStatus = document.getElementById("stageStatus");
-      const confidenceSlider = document.getElementById("confidenceSlider");
-      const confidenceValue = document.getElementById("confidenceValue");
-      const modeLabel = document.getElementById("modeLabel");
+      const imageSize = document.getElementById("imageSize");
+      const showRaw = document.getElementById("showRaw");
+      const showResult = document.getElementById("showResult");
+      const rawButton = document.getElementById("rawButton");
+      const resultButton = document.getElementById("resultButton");
+      const fileInput = document.getElementById("fileInput");
 
-      function analyzeImage() {
-        const floor = Number(confidenceSlider.value);
-        const jitter = {
-          balanced: [0, 0, 0, 0],
-          trash: [-0.02, 0.07, -0.02, -0.04],
-          dirty: [-0.04, -0.02, -0.02, -0.04],
-          overflow: [0.06, 0.03, 0.04, -0.03]
-        }[focus];
-
-        const objects = sampleObjects
-          .map((obj, index) => {
-            const confidence = Math.max(0.2, Math.min(0.96, obj.confidence + jitter[index]));
-            return { ...obj, confidence: Number(confidence.toFixed(2)) };
-          })
-          .filter((obj) => obj.confidence >= floor);
-
-        if (focus === "dirty") {
-          return {
-            image_width: imageMeta.width,
-            image_height: imageMeta.height,
-            objects: []
-          };
-        }
-
-        if (imageMeta.source === "upload") {
-          return adaptToUploadedImage(objects);
-        }
-
-        return {
-          image_width: imageMeta.width,
-          image_height: imageMeta.height,
-          objects
-        };
+      function setMode(mode) {
+        const isRaw = mode === "raw";
+        sceneImage.src = isRaw ? "./scene-fixed-input.jpg" : "./scene-fixed-model.jpg";
+        sceneImage.alt = isRaw ? "固定点位垃圾投放点原始截图" : "固定点位垃圾投放点真实识别结果截图";
+        caption.textContent = isRaw
+          ? "TPS BULU LOR 固定点位，公开原始截图：作为巡检输入画面。"
+          : "TPS BULU LOR 固定点位，公开系统结果截图：可见满溢、箱体和散落垃圾识别结果。";
+        stageStatus.textContent = isRaw ? "原始固定机位截图" : "真实识别结果截图";
+        showRaw.classList.toggle("active", isRaw);
+        showResult.classList.toggle("active", !isRaw);
+        imageSize.textContent = "1920 × 1080";
       }
 
-      function adaptToUploadedImage(objects) {
-        const scaleX = imageMeta.width / 1600;
-        const scaleY = imageMeta.height / 1200;
-        return {
-          image_width: imageMeta.width,
-          image_height: imageMeta.height,
-          objects: objects.slice(0, 4).map((obj, index) => ({
-            ...obj,
-            id: `upload_${index + 1}`,
-            bbox: {
-              x1: Math.round(obj.bbox.x1 * scaleX),
-              y1: Math.round(obj.bbox.y1 * scaleY),
-              x2: Math.round(obj.bbox.x2 * scaleX),
-              y2: Math.round(obj.bbox.y2 * scaleY)
-            },
-            reason: "已根据上传照片比例重新定位，实际部署时会根据现场照片给出实时判断。",
-            action: obj.action
-          }))
-        };
-      }
+      showRaw.addEventListener("click", () => setMode("raw"));
+      rawButton.addEventListener("click", () => setMode("raw"));
+      showResult.addEventListener("click", () => setMode("result"));
+      resultButton.addEventListener("click", () => setMode("result"));
 
-      function renderResult(result) {
-        lastResult = result;
-        modeLabel.textContent = focusCopy[focus];
-        countLabel.textContent = result.objects.length;
-        summaryOutput.textContent = buildSummary(result.objects);
-        stageStatus.textContent = getStageStatus(result.objects.length);
-        renderCards(result.objects);
-        renderOverlay(result.objects, result.image_width, result.image_height);
-      }
-
-      function renderCards(objects) {
-        if (!objects.length) {
-          results.innerHTML = `<div class="empty">${getEmptyMessage()}</div>`;
-          return;
-        }
-
-        results.innerHTML = objects.map((obj) => `
-          <article class="object-card">
-            <div class="object-top">
-              <div class="object-name">
-                <b>${obj.label_zh}</b>
-                <span>${categoryLabel[obj.category] || obj.category}</span>
-              </div>
-              <div class="confidence">${Math.round(obj.confidence * 100)}%</div>
-            </div>
-            <div class="reason">${obj.reason}</div>
-            <div class="action-note">${obj.action}</div>
-          </article>
-        `).join("");
-      }
-
-      function buildSummary(objects) {
-        if (!objects.length) return "当前公开样例未接入真实识别结果。接入客户现场截图和复核数据后，可展示满溢、落地垃圾、地面脏污、投放阻挡等事件，并生成清运或保洁建议。";
-        const actionable = objects.filter((obj) => obj.category !== "ignore").length;
-        const hasOverflow = objects.some((obj) => obj.category === "overflow");
-        const hasDirty = objects.some((obj) => obj.category === "dirty");
-        if (hasOverflow && hasDirty) return `发现 ${actionable} 项需要处理的现场事件，建议同时派发清运和保洁工单，并保留截图给治理平台。`;
-        if (hasOverflow) return `发现 ${actionable} 项满溢或投放阻挡风险，建议优先派发清运工单。`;
-        return `发现 ${actionable} 项现场事件，建议进入治理平台复核并按点位规则派单。`;
-      }
-
-      function getStageStatus(count) {
-        if (!count) return `${focusCopy[focus]} · 等待真实识别结果`;
-        return `${focusCopy[focus]} · 发现 ${count} 项`;
-      }
-
-      function getEmptyMessage() {
-        return "没有真实识别结果前不展示标注框。请接入客户现场截图与复核结果后，再展示可追溯的异常事件。";
-      }
-
-      function renderOverlay(objects, naturalWidth, naturalHeight) {
-        const visible = getVisibleImageSize();
-        overlay.style.width = `${visible.width}px`;
-        overlay.style.height = `${visible.height}px`;
-        overlay.innerHTML = "";
-
-        const scaleX = visible.width / naturalWidth;
-        const scaleY = visible.height / naturalHeight;
-
-        objects.forEach((obj) => {
-          const box = document.createElement("div");
-          const color = colors[obj.category] || colors.other;
-          box.className = "bbox";
-          box.style.borderColor = color;
-          box.style.color = color;
-          box.style.left = `${obj.bbox.x1 * scaleX}px`;
-          box.style.top = `${obj.bbox.y1 * scaleY}px`;
-          box.style.width = `${(obj.bbox.x2 - obj.bbox.x1) * scaleX}px`;
-          box.style.height = `${(obj.bbox.y2 - obj.bbox.y1) * scaleY}px`;
-          box.innerHTML = `<span class="bbox-label">${obj.label_zh} · ${Math.round(obj.confidence * 100)}%</span>`;
-          overlay.appendChild(box);
-        });
-      }
-
-      function getVisibleImageSize() {
-        const node = imageMeta.source === "sample" ? imageFrame : sourceImage;
-        return { width: node.clientWidth, height: node.clientHeight };
-      }
-
-      function resetSample() {
-        sourceImage.hidden = true;
-        sampleImage.hidden = false;
-        imageShell.classList.remove("sample-mode");
-        imageFrame.style.aspectRatio = "1600 / 1200";
-        imageMeta = { width: 1600, height: 1200, source: "sample" };
-        imageSize.textContent = "1600 × 1200";
-        stageStatus.textContent = "等待真实识别结果";
-        renderResult(analyzeImage());
-      }
-
-      function renderLegend() {
-        const legend = document.getElementById("legend");
-        legend.innerHTML = Object.entries(categoryLabel).map(([key, label]) => `
-          <div class="legend-item">
-            <span class="swatch" style="background:${colors[key]}"></span>
-            <span>${label}</span>
-            <span></span>
-          </div>
-        `).join("");
-      }
-
-      document.getElementById("focusButtons").addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-focus]");
-        if (!button) return;
-        focus = button.dataset.focus;
-        document.querySelectorAll("#focusButtons button").forEach((btn) => btn.classList.remove("active"));
-        button.classList.add("active");
-        renderResult(analyzeImage());
-      });
-
-      document.getElementById("detectButton").addEventListener("click", () => {
-        stageStatus.textContent = "正在分析照片...";
-        window.setTimeout(() => renderResult(analyzeImage()), 260);
-      });
-
-      document.getElementById("sampleButton").addEventListener("click", resetSample);
-
-      confidenceSlider.addEventListener("input", () => {
-        confidenceValue.textContent = Number(confidenceSlider.value).toFixed(2);
-        renderResult(analyzeImage());
-      });
-
-      document.getElementById("fileInput").addEventListener("change", (event) => {
+      fileInput.addEventListener("change", (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
-        sourceImage.onload = () => {
-          sampleImage.hidden = true;
-          imageShell.classList.remove("sample-mode");
-          sourceImage.hidden = false;
-          imageMeta = {
-            width: sourceImage.naturalWidth,
-            height: sourceImage.naturalHeight,
-            source: "upload"
-          };
-          imageFrame.style.aspectRatio = `${imageMeta.width} / ${imageMeta.height}`;
-          imageSize.textContent = `${imageMeta.width} × ${imageMeta.height}`;
-          stageStatus.textContent = "上传照片已就绪";
-          renderResult(analyzeImage());
+        sceneImage.onload = () => {
+          imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
         };
-        sourceImage.src = url;
+        sceneImage.src = url;
+        sceneImage.alt = "上传的客户现场截图";
+        caption.textContent = "已上传客户现场截图。当前页面不对上传图片生成标注，避免把未验证结果展示成真实识别。";
+        stageStatus.textContent = "客户现场输入截图";
+        showRaw.classList.remove("active");
+        showResult.classList.remove("active");
       });
-
-      window.addEventListener("resize", () => {
-        if (lastResult) renderOverlay(lastResult.objects, lastResult.image_width, lastResult.image_height);
-      });
-
-      renderLegend();
-      resetSample();
     </script>
   </body>
 </html>
