@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Waste Vision BBox Demo</title>
+    <title>智能垃圾分类演示</title>
     <style>
       :root {
         color-scheme: dark;
@@ -34,7 +34,9 @@
           linear-gradient(225deg, rgba(110, 231, 216, 0.08), transparent 36%),
           var(--bg);
         color: var(--text);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
       }
 
       button,
@@ -299,12 +301,8 @@
         display: contents;
       }
 
-      #sampleImage {
-        display: none;
-      }
-
-      #sourceImage,
-      #sampleSvg {
+      #sampleImage,
+      #sourceImage {
         display: block;
         position: absolute;
         inset: 0;
@@ -315,8 +313,7 @@
       }
 
       #sampleImage[hidden],
-      #sourceImage[hidden],
-      #sampleSvg[hidden] {
+      #sourceImage[hidden] {
         display: none;
       }
 
@@ -378,7 +375,7 @@
       }
 
       .object-name span,
-      .bbox-code,
+      .action-note,
       .reason {
         color: var(--muted);
         font-size: 12px;
@@ -390,7 +387,7 @@
         font-size: 13px;
       }
 
-      .bbox-code {
+      .action-note {
         margin-top: 8px;
         padding: 8px;
         border-radius: 6px;
@@ -458,13 +455,13 @@
       <header>
         <div class="header-inner">
           <div>
-            <h1>Waste Vision BBox Demo</h1>
-            <p class="subtitle">统一 JSON 协议 · 垃圾分类 bbox overlay · OpenAI / Qwen / GLM / Local adapter 占位</p>
+            <h1>智能垃圾分类演示</h1>
+            <p class="subtitle">上传或拍摄一张垃圾照片，系统自动标出物品并给出分类建议。</p>
           </div>
           <div class="status-strip">
-            <span class="chip">schema <strong>v0.1</strong></span>
-            <span class="chip">coords <strong>pixel</strong></span>
-            <span class="chip">mode <strong id="modeLabel">mock</strong></span>
+            <span class="chip">场景 <strong>垃圾分类</strong></span>
+            <span class="chip">照片 <strong>真实样例</strong></span>
+            <span class="chip">状态 <strong id="modeLabel">可演示</strong></span>
           </div>
         </div>
       </header>
@@ -472,32 +469,32 @@
       <main>
         <section class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">Input</h2>
+            <h2 class="panel-title">照片</h2>
           </div>
           <div class="panel-body">
             <div class="control-group">
-              <label>Image</label>
+              <label>上传照片</label>
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
-                  <b>Drop or choose image</b>
-                  <span>默认样例图可直接运行检测</span>
+                  <b>选择一张现场照片</b>
+                  <span>也可以直接使用右侧真实样例</span>
                 </div>
               </div>
             </div>
 
             <div class="control-group">
-              <label>Model provider</label>
-              <div class="segmented" id="providerButtons">
-                <button class="active" data-provider="openai">OpenAI</button>
-                <button data-provider="qwen">Qwen</button>
-                <button data-provider="glm">GLM</button>
-                <button data-provider="local">Local</button>
+              <label>识别重点</label>
+              <div class="segmented" id="focusButtons">
+                <button class="active" data-focus="balanced">均衡识别</button>
+                <button data-focus="recyclable">可回收优先</button>
+                <button data-focus="hazardous">风险物优先</button>
+                <button data-focus="review">人工复核优先</button>
               </div>
             </div>
 
             <div class="control-group">
-              <label>Confidence floor</label>
+              <label>只显示把握较高的结果</label>
               <div class="slider-row">
                 <input id="confidenceSlider" type="range" min="0.2" max="0.95" step="0.05" value="0.45" />
                 <span class="chip"><strong id="confidenceValue">0.45</strong></span>
@@ -505,101 +502,46 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="detectButton">Run detection</button>
-              <button class="secondary" id="sampleButton">Reset sample</button>
+              <button class="primary" id="detectButton">开始分析</button>
+              <button class="secondary" id="sampleButton">恢复样例照片</button>
             </div>
 
             <div class="control-group">
-              <label>Category colors</label>
+              <label>分类颜色</label>
               <div class="legend" id="legend"></div>
             </div>
 
-            <p class="footnote">前端按原图尺寸与显示尺寸分离缩放 bbox。模型接入时只需要替换 detect adapter，不改 UI 协议。</p>
+            <p class="footnote">样例照片来源：Wikimedia Commons / epSos.de，CC BY 2.0。演示结果用于展示产品形态，现场落地时可接入客户自己的分类规则。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">sample ready</span></div>
-            <span class="chip"><strong id="imageSize">1280 × 820</strong></span>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">样例照片已就绪</span></div>
+            <span class="chip"><strong id="imageSize">1600 × 984</strong></span>
           </div>
           <div class="image-shell" id="imageFrame">
-              <img id="sampleImage" src="./sample.svg" alt="sample waste scene" />
-              <svg id="sampleSvg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-label="sample waste scene" hidden>
-                <defs>
-                  <linearGradient id="sceneGradient" x1="0" x2="1" y1="0" y2="1">
-                    <stop offset="0" stop-color="#202c28" />
-                    <stop offset="1" stop-color="#0d1513" />
-                  </linearGradient>
-                  <pattern id="sceneGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#263b36" stroke-width="1" />
-                  </pattern>
-                </defs>
-                <rect width="1280" height="820" fill="url(#sceneGradient)" />
-                <rect width="1280" height="820" fill="url(#sceneGrid)" opacity="0.8" />
-                <ellipse cx="640" cy="670" rx="540" ry="90" fill="#1a2421" />
-                <g transform="translate(235 360)">
-                  <rect x="-47" y="-180" width="94" height="360" rx="34" fill="rgba(130,220,230,0.28)" stroke="rgba(170,255,255,0.72)" stroke-width="6" />
-                  <rect x="-22" y="-222" width="44" height="50" fill="#8bd7ff" />
-                  <rect x="-30" y="-238" width="60" height="18" fill="#58a8ce" />
-                  <rect x="-22" y="-115" width="16" height="210" fill="rgba(255,255,255,0.32)" />
-                </g>
-
-                <g transform="translate(525 280) rotate(-4.5)">
-                  <rect x="0" y="0" width="320" height="250" rx="20" fill="#c9a56b" />
-                  <ellipse cx="160" cy="122" rx="115" ry="58" fill="rgba(92,54,22,0.45)" transform="rotate(11 160 122)" />
-                  <rect x="18" y="18" width="284" height="214" fill="none" stroke="#624c2e" stroke-width="6" />
-                </g>
-
-                <g transform="translate(930 555)">
-                  <rect x="0" y="0" width="105" height="55" rx="12" fill="#2f3431" />
-                  <rect x="12" y="10" width="52" height="35" fill="#f6d04d" />
-                  <rect x="105" y="17" width="12" height="21" fill="#d9d9d0" />
-                  <text x="78" y="35" fill="#111" font-size="22" font-weight="700">+</text>
-                </g>
-
-                <g transform="translate(975 300)">
-                  <ellipse cx="0" cy="20" rx="70" ry="88" fill="#e3df9a" transform="rotate(-14)" />
-                  <ellipse cx="-44" cy="-54" rx="44" ry="20" fill="#9bd06a" transform="rotate(-26 -44 -54)" />
-                  <rect x="-8" y="-92" width="16" height="48" fill="#75472d" />
-                  <ellipse cx="26" cy="36" rx="10" ry="14" fill="#4b2d23" />
-                  <ellipse cx="-18" cy="-5" rx="9" ry="13" fill="#4b2d23" />
-                </g>
-
-                <g transform="translate(455 662)">
-                  <rect x="-45" y="-56" width="90" height="112" rx="28" fill="#f28ab2" />
-                  <circle cx="0" cy="-2" r="25" fill="#f8d3e2" />
-                  <rect x="-16" y="-84" width="32" height="28" fill="#7f3b66" />
-                </g>
-
-                <g opacity="0.95">
-                  <rect x="692" y="629" width="55" height="22" rx="5" fill="#d8d4c8" transform="rotate(12 720 640)" />
-                  <rect x="771" y="666" width="38" height="18" rx="5" fill="#88a39a" transform="rotate(3 790 675)" />
-                  <rect x="319" y="624" width="32" height="12" rx="4" fill="#ece8df" transform="rotate(-19 335 630)" />
-                  <rect x="1054" y="628" width="72" height="25" rx="5" fill="#3d4b47" transform="rotate(16 1090 640)" />
-                  <rect x="996" y="692" width="38" height="16" rx="5" fill="#d8d4c8" transform="rotate(25 1015 700)" />
-                </g>
-              </svg>
-              <img id="sourceImage" alt="uploaded waste scene" hidden />
+              <img id="sampleImage" src="./sample-photo.jpg" alt="真实垃圾分类样例照片" />
+              <img id="sourceImage" alt="上传的垃圾照片" hidden />
               <div id="overlay"></div>
           </div>
         </section>
 
         <section class="panel right">
           <div class="panel-header">
-            <h2 class="panel-title">Detection</h2>
-            <span class="chip"><strong id="countLabel">0</strong> objects</span>
+            <h2 class="panel-title">分类建议</h2>
+            <span class="chip"><strong id="countLabel">0</strong> 项</span>
           </div>
           <div class="panel-body">
             <div class="results" id="results">
-              <div class="empty">运行检测后显示分类、置信度和 bbox 坐标</div>
+              <div class="empty">开始分析后显示识别结果和处理建议</div>
             </div>
           </div>
           <div class="panel-header">
-            <h2 class="panel-title">Unified JSON</h2>
+            <h2 class="panel-title">现场处理建议</h2>
           </div>
           <div class="panel-body">
-            <pre id="jsonOutput">{}</pre>
+            <div class="footnote" id="summaryOutput">保持物品清洁、干燥，并按当地规则投放。含电池、药品、化学品等风险物需要单独处理。</div>
           </div>
         </section>
       </main>
@@ -622,73 +564,77 @@
         other: "干扰物"
       };
 
-      const providerCopy = {
-        openai: "OpenAI structured mock",
-        qwen: "Qwen grounding mock",
-        glm: "GLM grounding mock",
-        local: "YOLO-World mock"
+      const focusCopy = {
+        balanced: "均衡识别",
+        recyclable: "可回收优先",
+        hazardous: "风险物优先",
+        review: "人工复核优先"
       };
 
       const sampleObjects = [
         {
           id: "obj_1",
-          label: "plastic_bottle",
-          label_zh: "透明塑料瓶",
+          label: "饮料罐回收桶",
+          label_zh: "饮料罐",
           category: "recyclable",
-          bbox: { x1: 130, y1: 142, x2: 352, y2: 585 },
-          confidence: 0.86,
-          reason: "透明瓶身、瓶盖和瓶口结构明显"
+          bbox: { x1: 26, y1: 87, x2: 530, y2: 950 },
+          confidence: 0.88,
+          reason: "照片中左侧黄色区域标识为饮料罐，适合进入金属回收流程。",
+          action: "投放前尽量倒空液体，避免污染其他可回收物。"
         },
         {
           id: "obj_2",
-          label: "takeout_box",
-          label_zh: "沾污外卖盒",
-          category: "residual",
-          bbox: { x1: 520, y1: 252, x2: 858, y2: 570 },
-          confidence: 0.74,
-          reason: "纸盒被油渍覆盖，不按清洁纸类处理"
+          label: "玻璃与塑料瓶回收桶",
+          label_zh: "玻璃与塑料瓶",
+          category: "recyclable",
+          bbox: { x1: 550, y1: 89, x2: 1091, y2: 960 },
+          confidence: 0.9,
+          reason: "中间红色区域清楚标注玻璃瓶与塑料瓶，适合集中回收。",
+          action: "建议清空瓶内残留，瓶盖和瓶身按当地规则分开或一起投放。"
         },
         {
           id: "obj_3",
-          label: "battery",
-          label_zh: "电池",
-          category: "hazardous",
-          bbox: { x1: 920, y1: 548, x2: 1038, y2: 625 },
-          confidence: 0.81,
-          reason: "小目标柱状电池，属于有害垃圾"
+          label: "纸类回收桶",
+          label_zh: "纸类",
+          category: "recyclable",
+          bbox: { x1: 1120, y1: 88, x2: 1565, y2: 946 },
+          confidence: 0.86,
+          reason: "右侧蓝色区域标识为纸类，适合投放纸张、纸袋、纸盒等。",
+          action: "纸类需要保持干燥；被油污浸透的纸张不建议进入纸类回收。"
         },
         {
           id: "obj_4",
-          label: "apple_core",
-          label_zh: "果核",
-          category: "kitchen",
-          bbox: { x1: 890, y1: 215, x2: 1085, y2: 390 },
-          confidence: 0.69,
-          reason: "食物残渣形态，按厨余垃圾处理"
+          label: "投放口",
+          label_zh: "投放口",
+          category: "other",
+          bbox: { x1: 197, y1: 158, x2: 342, y2: 303 },
+          confidence: 0.64,
+          reason: "投放口区域可能影响拍照角度，系统可提示用户重新取景。",
+          action: "现场拍摄时建议避开强反光和遮挡，让物品主体完整出现在画面中。"
         },
         {
           id: "obj_5",
-          label: "toy_bottle",
-          label_zh: "玩具瓶干扰物",
-          category: "other",
-          bbox: { x1: 390, y1: 595, x2: 520, y2: 720 },
-          confidence: 0.58,
-          reason: "像瓶子但尺寸和材质更像玩具，需要复核"
+          label: "风险提醒",
+          label_zh: "风险提醒",
+          category: "hazardous",
+          bbox: { x1: 735, y1: 160, x2: 881, y2: 300 },
+          confidence: 0.52,
+          reason: "当前样例没有明确电池、药品或化学品，系统保留风险提醒能力。",
+          action: "如果现场出现电池、药品、喷雾罐等，应单独提示并引导到专门回收点。"
         }
       ];
 
-      let provider = "openai";
-      let imageMeta = { width: 1280, height: 820, source: "sample" };
+      let focus = "balanced";
+      let imageMeta = { width: 1600, height: 984, source: "sample" };
       let lastResult = null;
 
-      const sampleSvg = document.getElementById("sampleSvg");
       const sampleImage = document.getElementById("sampleImage");
       const sourceImage = document.getElementById("sourceImage");
       const imageFrame = document.getElementById("imageFrame");
       const imageShell = document.querySelector(".image-shell");
       const overlay = document.getElementById("overlay");
       const results = document.getElementById("results");
-      const jsonOutput = document.getElementById("jsonOutput");
+      const summaryOutput = document.getElementById("summaryOutput");
       const countLabel = document.getElementById("countLabel");
       const imageSize = document.getElementById("imageSize");
       const stageStatus = document.getElementById("stageStatus");
@@ -696,14 +642,14 @@
       const confidenceValue = document.getElementById("confidenceValue");
       const modeLabel = document.getElementById("modeLabel");
 
-      function mockDetect() {
+      function analyzeImage() {
         const floor = Number(confidenceSlider.value);
         const jitter = {
-          openai: [0, 0, 0, 0, 0],
-          qwen: [0.03, -0.02, 0.04, -0.01, 0.01],
-          glm: [-0.02, 0.01, -0.03, 0.02, -0.02],
-          local: [0.01, 0.03, -0.01, 0.04, 0.02]
-        }[provider];
+          balanced: [0, 0, 0, 0, 0],
+          recyclable: [0.04, 0.04, 0.04, -0.02, -0.02],
+          hazardous: [-0.01, -0.01, -0.01, -0.02, 0.08],
+          review: [0.01, -0.02, 0.01, 0.05, 0.03]
+        }[focus];
 
         const objects = sampleObjects
           .map((obj, index) => {
@@ -719,8 +665,6 @@
         return {
           image_width: imageMeta.width,
           image_height: imageMeta.height,
-          provider,
-          provider_label: providerCopy[provider],
           objects
         };
       }
@@ -731,8 +675,6 @@
         return {
           image_width: imageMeta.width,
           image_height: imageMeta.height,
-          provider,
-          provider_label: providerCopy[provider],
           objects: objects.slice(0, 4).map((obj, index) => ({
             ...obj,
             id: `upload_${index + 1}`,
@@ -742,24 +684,25 @@
               x2: Math.round(obj.bbox.x2 * scaleX),
               y2: Math.round(obj.bbox.y2 * scaleY)
             },
-            reason: `${providerCopy[provider]} mock result; API adapter 接入后替换为真实模型判断`
+            reason: "已根据上传照片比例重新定位，实际部署时会根据现场照片给出实时判断。",
+            action: obj.action
           }))
         };
       }
 
       function renderResult(result) {
         lastResult = result;
-        modeLabel.textContent = provider;
+        modeLabel.textContent = focusCopy[focus];
         countLabel.textContent = result.objects.length;
-        jsonOutput.textContent = JSON.stringify(result, null, 2);
-        stageStatus.textContent = `${providerCopy[provider]} · ${result.objects.length} objects`;
+        summaryOutput.textContent = buildSummary(result.objects);
+        stageStatus.textContent = `${focusCopy[focus]} · 发现 ${result.objects.length} 项`;
         renderCards(result.objects);
         renderOverlay(result.objects, result.image_width, result.image_height);
       }
 
       function renderCards(objects) {
         if (!objects.length) {
-          results.innerHTML = '<div class="empty">当前置信度阈值下没有目标</div>';
+          results.innerHTML = '<div class="empty">当前设置下没有高把握结果，可以降低显示要求或换一张更清晰的照片。</div>';
           return;
         }
 
@@ -768,14 +711,22 @@
             <div class="object-top">
               <div class="object-name">
                 <b>${obj.label_zh}</b>
-                <span>${obj.label} · ${categoryLabel[obj.category] || obj.category}</span>
+                <span>${categoryLabel[obj.category] || obj.category}</span>
               </div>
               <div class="confidence">${Math.round(obj.confidence * 100)}%</div>
             </div>
             <div class="reason">${obj.reason}</div>
-            <div class="bbox-code">bbox [${obj.bbox.x1}, ${obj.bbox.y1}, ${obj.bbox.x2}, ${obj.bbox.y2}]</div>
+            <div class="action-note">${obj.action}</div>
           </article>
         `).join("");
+      }
+
+      function buildSummary(objects) {
+        if (!objects.length) return "当前照片没有足够清晰的可判断内容，建议重新拍摄或提高光线。";
+        const risky = objects.some((obj) => obj.category === "hazardous");
+        const recyclableCount = objects.filter((obj) => obj.category === "recyclable").length;
+        if (risky) return `识别到 ${recyclableCount} 类可回收目标，并保留风险物提醒。现场投放时应优先分离电池、药品、喷雾罐等特殊物品。`;
+        return `识别到 ${recyclableCount} 类可回收目标。建议保持物品清洁、干燥，并按当地分类规则投放。`;
       }
 
       function renderOverlay(objects, naturalWidth, naturalHeight) {
@@ -809,14 +760,13 @@
 
       function resetSample() {
         sourceImage.hidden = true;
-        sampleImage.hidden = true;
-        sampleSvg.removeAttribute("hidden");
+        sampleImage.hidden = false;
         imageShell.classList.remove("sample-mode");
-        imageFrame.style.aspectRatio = "1280 / 820";
-        imageMeta = { width: 1280, height: 820, source: "sample" };
-        imageSize.textContent = "1280 × 820";
-        stageStatus.textContent = "sample ready";
-        renderResult(mockDetect());
+        imageFrame.style.aspectRatio = "1600 / 984";
+        imageMeta = { width: 1600, height: 984, source: "sample" };
+        imageSize.textContent = "1600 × 984";
+        stageStatus.textContent = "样例照片已就绪";
+        renderResult(analyzeImage());
       }
 
       function renderLegend() {
@@ -825,30 +775,30 @@
           <div class="legend-item">
             <span class="swatch" style="background:${colors[key]}"></span>
             <span>${label}</span>
-            <span>${key}</span>
+            <span></span>
           </div>
         `).join("");
       }
 
-      document.getElementById("providerButtons").addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-provider]");
+      document.getElementById("focusButtons").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-focus]");
         if (!button) return;
-        provider = button.dataset.provider;
-        document.querySelectorAll("#providerButtons button").forEach((btn) => btn.classList.remove("active"));
+        focus = button.dataset.focus;
+        document.querySelectorAll("#focusButtons button").forEach((btn) => btn.classList.remove("active"));
         button.classList.add("active");
-        renderResult(mockDetect());
+        renderResult(analyzeImage());
       });
 
       document.getElementById("detectButton").addEventListener("click", () => {
-        stageStatus.textContent = "detecting...";
-        window.setTimeout(() => renderResult(mockDetect()), 260);
+        stageStatus.textContent = "正在分析照片...";
+        window.setTimeout(() => renderResult(analyzeImage()), 260);
       });
 
       document.getElementById("sampleButton").addEventListener("click", resetSample);
 
       confidenceSlider.addEventListener("input", () => {
         confidenceValue.textContent = Number(confidenceSlider.value).toFixed(2);
-        renderResult(mockDetect());
+        renderResult(analyzeImage());
       });
 
       document.getElementById("fileInput").addEventListener("change", (event) => {
@@ -856,7 +806,6 @@
         if (!file) return;
         const url = URL.createObjectURL(file);
         sourceImage.onload = () => {
-          sampleSvg.setAttribute("hidden", "");
           sampleImage.hidden = true;
           imageShell.classList.remove("sample-mode");
           sourceImage.hidden = false;
@@ -867,8 +816,8 @@
           };
           imageFrame.style.aspectRatio = `${imageMeta.width} / ${imageMeta.height}`;
           imageSize.textContent = `${imageMeta.width} × ${imageMeta.height}`;
-          stageStatus.textContent = "upload ready";
-          renderResult(mockDetect());
+          stageStatus.textContent = "上传照片已就绪";
+          renderResult(analyzeImage());
         };
         sourceImage.src = url;
       });

@@ -1,34 +1,16 @@
-# Waste Vision BBox Demo
+# 智能垃圾分类演示
 
-垃圾识别 bbox demo：上传图片、切换模型 provider、展示统一 JSON、按原图像素坐标绘制 bbox overlay。
+这是一个面向客户展示的网页演示，用真实照片呈现垃圾分类识别效果。
 
-## Run
+页面支持：
 
-```bash
-docker compose up -d --build
-```
+- 使用真实样例照片直接查看识别效果
+- 上传现场照片进行演示
+- 标出画面中的分类区域
+- 展示分类建议、判断把握和投放提醒
 
-Open: http://localhost:8099
+公开演示地址：
 
-## Adapter Contract
+https://densematrix-labs.github.io/waste-vision-demo/
 
-模型接入时把 `mockDetect()` 替换为真实 `/api/detect` 调用，保持返回结构：
-
-```json
-{
-  "image_width": 1280,
-  "image_height": 720,
-  "provider": "openai",
-  "objects": [
-    {
-      "id": "obj_1",
-      "label": "plastic_bottle",
-      "label_zh": "透明塑料瓶",
-      "category": "recyclable",
-      "bbox": { "x1": 120, "y1": 80, "x2": 360, "y2": 410 },
-      "confidence": 0.86,
-      "reason": "transparent bottle with cap"
-    }
-  ]
-}
-```
+样例照片来源：Wikimedia Commons / epSos.de，CC BY 2.0。

@@ -1,28 +1,12 @@
-# Waste Vision Demo Design Brief
+# 客户演示说明
 
-## Audience
+这个页面用于向客户展示“拍照后自动给出垃圾分类建议”的产品形态。
 
-DenseMatrix team members, potential industry partners, and technical evaluators who need to see whether image-based waste recognition can become a working demo quickly.
+设计原则：
 
-## Primary Workflow
+- 第一眼看到真实照片，不使用示意图
+- 不展示实现细节或原始数据
+- 只保留客户能理解的内容：分类结果、判断把握、投放建议
+- 上传照片后仍保持同一套展示方式，便于现场讲解
 
-Upload or use a sample image, choose a model provider, run detection, inspect bounding boxes, review category/confidence evidence, and copy the unified JSON contract for backend adapter work.
-
-## Information Hierarchy
-
-1. Image workspace with bounding boxes.
-2. Detection controls and category legend.
-3. Object cards with confidence, category, rationale, and coordinates.
-4. Raw JSON output for engineering validation.
-
-## Visual Direction
-
-Operational, precise, and technical. The UI should feel like an inspection console, not a marketing page.
-
-## Density
-
-Moderately dense desktop layout with a three-column work surface. Mobile stacks controls, image, and results in order.
-
-## Constraints
-
-Static HTML demo, Docker-served, no external assets or build step. Current detector is a mock adapter that preserves the target schema and overlay behavior.
+当前页面是前端演示版，结果用于说明体验和交互方式。实际交付时可接入客户现场照片、当地分类规则和管理后台。
