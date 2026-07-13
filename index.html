@@ -456,12 +456,12 @@
         <div class="header-inner">
           <div>
             <h1>垃圾厢房智能巡检演示</h1>
-            <p class="subtitle">接入现场摄像头截图，自动发现满溢、落地垃圾、地面脏污和阻挡风险。</p>
+            <p class="subtitle">展示摄像头截图进入系统后的巡检、复核和派单流程；现场识别结果需由客户真实数据接入。</p>
           </div>
           <div class="status-strip">
             <span class="chip">场景 <strong>垃圾厢房</strong></span>
-            <span class="chip">照片 <strong>真实巡检</strong></span>
-            <span class="chip">状态 <strong id="modeLabel">可演示</strong></span>
+            <span class="chip">照片 <strong>公开样例</strong></span>
+            <span class="chip">状态 <strong id="modeLabel">等真实结果</strong></span>
           </div>
         </div>
       </header>
@@ -478,7 +478,7 @@
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
                   <b>选择一张现场截图</b>
-                  <span>也可以直接使用右侧真实巡检样例</span>
+                  <span>也可以先使用右侧公开场景样例</span>
                 </div>
               </div>
             </div>
@@ -511,13 +511,13 @@
               <div class="legend" id="legend"></div>
             </div>
 
-            <p class="footnote">样例照片为公开真实照片，来源：Wikimedia Commons，Public Domain。演示结果用于展示产品形态，现场落地时可接入客户自己的摄像头和治理规则。</p>
+            <p class="footnote">样例照片来自公开真实照片，仅用于展示页面形态。识别结果必须来自客户现场系统或复核数据，本页不使用手动画框冒充真实结果。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">巡检样例已就绪</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">等待真实识别结果</span></div>
             <span class="chip"><strong id="imageSize">1600 × 1200</strong></span>
           </div>
           <div class="image-shell" id="imageFrame">
@@ -534,14 +534,14 @@
           </div>
           <div class="panel-body">
             <div class="results" id="results">
-              <div class="empty">开始巡检后显示异常事件和处理建议</div>
+              <div class="empty">接入客户现场识别结果后显示异常事件和处理建议</div>
             </div>
           </div>
           <div class="panel-header">
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <div class="footnote" id="summaryOutput">系统发现需要处理的事件后，可自动生成清运、保洁或复核工单，并保留现场截图作为依据。</div>
+            <div class="footnote" id="summaryOutput">当前页面只展示输入截图和业务流程；不展示未经真实识别产生的标注结果。</div>
           </div>
         </section>
       </main>
@@ -571,49 +571,7 @@
         overflow: "满溢优先"
       };
 
-      const sampleObjects = [
-        {
-          id: "obj_1",
-          label: "垃圾桶满溢",
-          label_zh: "垃圾桶满溢",
-          category: "overflow",
-          bbox: { x1: 555, y1: 438, x2: 1188, y2: 665 },
-          confidence: 0.91,
-          reason: "投放口附近已有垃圾袋外露，继续投放可能造成满溢。",
-          action: "建议生成清运工单，并要求保洁人员到场处理。"
-        },
-        {
-          id: "obj_2",
-          label: "小包垃圾外露",
-          label_zh: "小包垃圾外露",
-          category: "trash",
-          bbox: { x1: 600, y1: 505, x2: 735, y2: 600 },
-          confidence: 0.84,
-          reason: "左侧投放口处出现袋装垃圾外露，存在掉落到地面的风险。",
-          action: "建议安排巡检人员复位或清理，并记录点位照片。"
-        },
-        {
-          id: "obj_3",
-          label: "投放口阻挡",
-          label_zh: "投放口阻挡",
-          category: "blockage",
-          bbox: { x1: 972, y1: 486, x2: 1188, y2: 612 },
-          confidence: 0.8,
-          reason: "右侧投放口被垃圾袋遮挡，可能影响居民正常投放。",
-          action: "建议派发保洁处理，并在工单中标注“阻挡投放口”。"
-        },
-        {
-          id: "obj_4",
-          id: "obj_4",
-          label: "背景车辆干扰",
-          label_zh: "背景车辆干扰",
-          category: "ignore",
-          bbox: { x1: 785, y1: 288, x2: 1185, y2: 455 },
-          confidence: 0.58,
-          reason: "画面远处车辆不属于治理目标，应作为干扰内容排除。",
-          action: "系统只对配置区域内的事件生成工单，减少误报。"
-        }
-      ];
+      const sampleObjects = [];
 
       let focus = "balanced";
       let imageMeta = { width: 1600, height: 1200, source: "sample" };
@@ -721,8 +679,7 @@
       }
 
       function buildSummary(objects) {
-        if (!objects.length && focus === "dirty") return "当前样例未发现明显地面脏污或积水。该能力可用于客户现场的油污、水渍、散落残渣等复核场景。";
-        if (!objects.length) return "当前照片没有足够清晰的可判断内容，建议重新拍摄或提高光线。";
+        if (!objects.length) return "当前公开样例未接入真实识别结果。接入客户现场截图和复核数据后，可展示满溢、落地垃圾、地面脏污、投放阻挡等事件，并生成清运或保洁建议。";
         const actionable = objects.filter((obj) => obj.category !== "ignore").length;
         const hasOverflow = objects.some((obj) => obj.category === "overflow");
         const hasDirty = objects.some((obj) => obj.category === "dirty");
@@ -732,13 +689,12 @@
       }
 
       function getStageStatus(count) {
-        if (focus === "dirty" && count === 0) return "脏污复核 · 未发现明显异常";
+        if (!count) return `${focusCopy[focus]} · 等待真实识别结果`;
         return `${focusCopy[focus]} · 发现 ${count} 项`;
       }
 
       function getEmptyMessage() {
-        if (focus === "dirty") return "当前样例地面没有明显脏污，不强行标注；可上传客户现场脏污、积水或残渣照片验证。";
-        return "当前设置下没有高把握结果，可以降低显示要求或换一张更清晰的照片。";
+        return "没有真实识别结果前不展示标注框。请接入客户现场截图与复核结果后，再展示可追溯的异常事件。";
       }
 
       function renderOverlay(objects, naturalWidth, naturalHeight) {
@@ -777,7 +733,7 @@
         imageFrame.style.aspectRatio = "1600 / 1200";
         imageMeta = { width: 1600, height: 1200, source: "sample" };
         imageSize.textContent = "1600 × 1200";
-        stageStatus.textContent = "巡检样例已就绪";
+        stageStatus.textContent = "等待真实识别结果";
         renderResult(analyzeImage());
       }
 
