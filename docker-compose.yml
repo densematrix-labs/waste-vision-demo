@@ -1,0 +1,7 @@
+services:
+  waste-vision-demo:
+    build: .
+    container_name: waste-vision-demo
+    ports:
+      - "8099:80"
+    restart: unless-stopped
