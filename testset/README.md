@@ -52,6 +52,17 @@
 - `taxonomy.json`：事件类别、正负边界例和标注要求。
 - `source_candidates.json`：可追溯公开数据源候选。
 - `manifest_template.csv`：单张图片/视频帧的登记模板。
+- `manifest.csv`：当前 seed 样本候选清单。
+- `build_seed_manifest.py`：从已有真实数据和 TACO 候选源生成 seed manifest。
+
+## 当前 seed manifest
+
+已生成 100 条候选样本：
+
+- 垃圾满溢/堆积：50 条，来自 `UniqueData/outdoor_garbage`，图像级状态标签。
+- 小包垃圾落地：50 条，来自 TACO，带实例标注候选，需要人工筛选固定点位相似度。
+
+其余事件已有来源候选和字段标准，未纳入本批 seed manifest。
 
 ## 当前数据边界
 
