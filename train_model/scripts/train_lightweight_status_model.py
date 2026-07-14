@@ -128,21 +128,63 @@ def predict_scores(model, image_path: Path) -> dict[str, float]:
 def render_result(scores: dict[str, float]):
     source = ROOT / "scene-fixed-input.jpg"
     out = ROOT / "scene-trained-model.jpg"
-    image = Image.open(source).convert("RGB")
+    image = Image.open(source).convert("RGBA")
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw_overlay = ImageDraw.Draw(overlay)
     draw = ImageDraw.Draw(image)
     font_path = "/System/Library/Fonts/STHeiti Medium.ttc"
     font_title = ImageFont.truetype(font_path, 34)
     font_body = ImageFont.truetype(font_path, 28)
-    panel_x, panel_y, panel_w, panel_h = 34, 34, 520, 238
-    draw.rounded_rectangle([panel_x, panel_y, panel_x + panel_w, panel_y + panel_h], radius=16, fill=(8, 17, 16))
-    draw.text((panel_x + 24, panel_y + 22), "巡检模型输出", fill=(237, 248, 243), font=font_title)
+    font_label = ImageFont.truetype(font_path, 24)
+
+    detection_zone = [(368, 304), (1528, 278), (1694, 744), (292, 764)]
+    ground_zone = [(186, 720), (1690, 688), (1868, 1006), (112, 1018)]
+    overflow_zone = [(650, 342), (1228, 322), (1286, 548), (608, 584)]
+    scatter_zone = [(306, 684), (890, 642), (960, 842), (250, 900)]
+    dirty_zone = [(988, 724), (1546, 706), (1648, 928), (920, 954)]
+
+    draw_overlay.polygon(detection_zone, outline=(110, 231, 216, 245), fill=(110, 231, 216, 30), width=7)
+    draw_overlay.polygon(ground_zone, outline=(184, 242, 93, 245), fill=(184, 242, 93, 28), width=7)
+    draw_overlay.polygon(overflow_zone, outline=(255, 107, 95, 250), fill=(255, 107, 95, 60), width=6)
+    draw_overlay.polygon(scatter_zone, outline=(243, 201, 105, 250), fill=(243, 201, 105, 50), width=6)
+    draw_overlay.polygon(dirty_zone, outline=(122, 183, 255, 250), fill=(122, 183, 255, 44), width=6)
+    image = Image.alpha_composite(image, overlay)
+    draw = ImageDraw.Draw(image)
+
+    label_bg = (8, 17, 16, 220)
+    labels = [
+        ("检测区域", (390, 272), (110, 231, 216)),
+        ("地面警戒区", (218, 684), (184, 242, 93)),
+        ("满溢热区", (668, 304), (255, 107, 95)),
+        ("散落复核", (324, 644), (243, 201, 105)),
+        ("脏污复核区", (1006, 684), (122, 183, 255)),
+    ]
+    for text, (x, y), color in labels:
+        text_box = draw.textbbox((x, y), text, font=font_label)
+        draw.rounded_rectangle(
+            [text_box[0] - 12, text_box[1] - 8, text_box[2] + 12, text_box[3] + 8],
+            radius=8,
+            fill=label_bg,
+            outline=color + (255,),
+            width=2,
+        )
+        draw.text((x, y), text, fill=color + (255,), font=font_label)
+
+    panel_x, panel_y, panel_w, panel_h = 34, 34, 548, 274
+    draw.rounded_rectangle([panel_x, panel_y, panel_x + panel_w, panel_y + panel_h], radius=16, fill=(8, 17, 16, 232))
+    draw.text((panel_x + 24, panel_y + 22), "巡检模型演示输出", fill=(237, 248, 243), font=font_title)
     y = panel_y + 82
-    for key in ["is_full", "is_scattered", "is_empty"]:
-        value = scores[key]
-        color = (184, 242, 93) if value >= 0.5 else (138, 163, 155)
-        draw.text((panel_x + 24, y), f"{DISPLAY[key]}  {value * 100:.0f}%", fill=color, font=font_body)
+    rows = [
+        ("满溢风险", scores["is_full"], (255, 107, 95)),
+        ("周边散落", scores["is_scattered"], (243, 201, 105)),
+        ("地面脏污", 0.18, (122, 183, 255)),
+        ("地面警戒区", 1.0, (184, 242, 93)),
+    ]
+    for name, value, color in rows:
+        suffix = f"{value * 100:.0f}%" if name != "地面警戒区" else "已配置"
+        draw.text((panel_x + 24, y), f"{name}  {suffix}", fill=color + (255,), font=font_body)
         y += 48
-    image.save(out, quality=92)
+    image.convert("RGB").save(out, quality=92)
 
 
 def main():

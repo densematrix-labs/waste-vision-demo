@@ -450,11 +450,11 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检演示</h1>
-            <p class="subtitle">用固定点位画面展示垃圾投放点巡检流程；识别结果由自训练巡检模型生成，现场信号作为客户系统接入项参与工单判断。</p>
+            <p class="subtitle">用固定点位画面展示垃圾投放点巡检流程；巡检模型演示输出围绕检测区域和地面警戒区生成，现场信号作为客户系统接入项参与工单判断。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
-            <span class="chip">识别 <strong>自训练模型</strong></span>
+            <span class="chip">识别 <strong>巡检模型</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -495,12 +495,15 @@
             <div class="control-group">
               <label>状态识别结果</label>
               <div class="legend">
-                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢风险：自训练巡检模型输出</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>周边散落：自训练巡检模型输出</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>检测区域：只复核客户配置范围</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>地面警戒区：散落与脏污复核范围</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：巡检模型演示输出</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：巡检模型演示输出</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>脏污复核区：油污、泥渍、积水样例</span></div>
               </div>
             </div>
 
-            <p class="footnote">当前样例使用公开固定点位画面作为输入。状态结果由真实标注数据训练出的巡检模型输出，上传客户现场截图时不展示未验证结果。</p>
+            <p class="footnote">当前样例使用公开固定点位画面作为输入。页面展示巡检模型样例输出，上传客户现场截图时不展示未验证结果。</p>
           </div>
         </section>
 
@@ -515,14 +518,14 @@
           </div>
           <div class="image-shell">
             <img id="sceneImage" src="./scene-trained-model.jpg" alt="固定点位垃圾投放点状态识别结果" />
-            <div class="image-caption" id="caption">固定点位画面经自训练巡检模型识别：输出满溢风险、周边散落和未满载状态。</div>
+            <div class="image-caption" id="caption">固定点位画面经巡检模型演示识别：只围绕检测区域与地面警戒区复核满溢、散落和脏污风险。</div>
           </div>
         </section>
 
         <section class="panel right">
           <div class="panel-header">
             <h2 class="panel-title">事件判断</h2>
-            <span class="chip"><strong>2</strong> 项</span>
+            <span class="chip"><strong>3</strong> 项</span>
           </div>
           <div class="panel-body">
             <div class="results">
@@ -530,11 +533,11 @@
                 <div class="object-top">
                   <div class="object-name">
                     <b>满溢风险</b>
-                    <span>模型输出：满溢风险状态</span>
+                    <span>样例输出：满溢风险热区</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
-                <div class="reason">自训练模型给出满溢风险状态，适合作为清运优先级判断依据。</div>
+                <div class="reason">满溢热区位于客户配置的检测区域内，适合作为清运优先级判断依据。</div>
                 <div class="action-note">建议进入清运复核队列，结合客户现场桶内高度和清运计划确定派单优先级。</div>
               </article>
 
@@ -542,12 +545,24 @@
                 <div class="object-top">
                   <div class="object-name">
                     <b>周边散落</b>
-                    <span>模型输出：点位散落状态</span>
+                    <span>样例输出：地面警戒区散落</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
-                <div class="reason">自训练模型给出周边散落状态，适合作为保洁复核和现场处置判断依据。</div>
+                <div class="reason">散落热区落在地面警戒区内，适合作为保洁复核和现场处置判断依据。</div>
                 <div class="action-note">部署时将投放口、桶身、地面警戒区作为客户点位配置，减少非目标区域干扰。</div>
+              </article>
+
+              <article class="object-card">
+                <div class="object-top">
+                  <div class="object-name">
+                    <b>地面脏污</b>
+                    <span>样例输出：油污、泥渍、积水复核</span>
+                  </div>
+                  <div class="confidence">复核</div>
+                </div>
+                <div class="reason">地面脏污只在警戒区内复核，用来区分真实脏污、雨后反光、积水和非目标区域干扰。</div>
+                <div class="action-note">建议作为保洁工单触发项，客户现场接入后可结合雨天、清扫记录和点位时段降低误报。</div>
               </article>
             </div>
           </div>
@@ -579,7 +594,7 @@
         sceneImage.alt = isRaw ? "固定点位垃圾投放点原始截图" : "固定点位垃圾投放点状态识别结果";
         caption.textContent = isRaw
           ? "TPS BULU LOR 固定点位，公开原始截图：作为巡检输入画面。"
-          : "固定点位画面经自训练巡检模型识别：输出满溢风险、周边散落和未满载状态。";
+          : "固定点位画面经巡检模型演示识别：只围绕检测区域与地面警戒区复核满溢、散落和脏污风险。";
         stageStatus.textContent = isRaw ? "原始固定机位截图" : "状态识别结果";
         showRaw.classList.toggle("active", isRaw);
         showResult.classList.toggle("active", !isRaw);
