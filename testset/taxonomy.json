@@ -1,0 +1,71 @@
+{
+  "version": "2026-07-13",
+  "purpose": "Waste-room governance event test set for fixed-camera inspection demos.",
+  "minimum_per_event": 20,
+  "target_per_event": 50,
+  "events": [
+    {
+      "id": "bag_on_ground",
+      "name_zh": "小包垃圾落地",
+      "positive_examples": ["袋装垃圾", "零散垃圾", "远景小目标", "遮挡", "贴边"],
+      "negative_examples": ["垃圾桶外观", "路沿", "车辆", "树叶", "检测区域外垃圾"],
+      "boundary_examples": ["半袋入桶", "垃圾贴近桶底", "画面边缘小袋", "远景低分辨率小目标"],
+      "annotation_modes": ["bbox", "region", "event_state"],
+      "must_have": ["正例", "负例", "边界例", "检测区域内外区分"]
+    },
+    {
+      "id": "ground_dirty",
+      "name_zh": "地面脏污",
+      "positive_examples": ["油污", "泥渍", "积水", "污渍拖痕"],
+      "negative_examples": ["雨后反光", "地砖纹理", "阴影", "正常湿地面"],
+      "boundary_examples": ["浅色污渍", "强反光积水", "局部泥点", "低光地面纹理"],
+      "annotation_modes": ["event_state", "region", "mask_optional"],
+      "must_have": ["误报压测", "雨后/反光负例", "不同地面材质"]
+    },
+    {
+      "id": "overflow_pileup",
+      "name_zh": "垃圾满溢/堆积",
+      "positive_examples": ["桶口外溢", "箱房内堆放", "垃圾桶旁堆积"],
+      "negative_examples": ["正常满载", "空桶", "背景杂物"],
+      "boundary_examples": ["接近满载但未外溢", "桶盖半开", "垃圾袋靠近桶旁但未堆积"],
+      "annotation_modes": ["event_state", "bbox", "region"],
+      "must_have": ["桶口区域", "桶旁区域", "堆积程度"]
+    },
+    {
+      "id": "lid_blocked",
+      "name_zh": "箱盖被压/阻挡",
+      "positive_examples": ["大件物体压盖", "袋子卡住箱盖", "投放口被挡"],
+      "negative_examples": ["正常闭合", "正常打开", "人手短暂接触"],
+      "boundary_examples": ["箱盖半开", "物体靠近但未压住", "短时遮挡"],
+      "annotation_modes": ["bbox", "event_state"],
+      "must_have": ["阻挡物", "箱盖状态", "投放口状态"]
+    },
+    {
+      "id": "illegal_drop_behavior",
+      "name_zh": "违规投放行为",
+      "positive_examples": ["非投放时间拎袋进入", "随地丢弃", "弯腰", "投掷", "人和垃圾袋交互"],
+      "negative_examples": ["路过", "保洁作业", "正常投放", "取物"],
+      "boundary_examples": ["拎袋经过未投放", "短时停留", "多人遮挡", "低帧率视频"],
+      "annotation_modes": ["video_clip", "track", "event_state", "bbox"],
+      "must_have": ["前后帧", "人", "垃圾袋", "投放区域", "时间条件"]
+    },
+    {
+      "id": "cleaner_worker",
+      "name_zh": "保洁/工作人员场景",
+      "positive_examples": ["人在岗", "清扫动作", "清运动作", "工作服"],
+      "negative_examples": ["普通居民", "路人", "快递", "车辆经过"],
+      "boundary_examples": ["人员背对摄像头", "工作服不明显", "清扫工具被遮挡"],
+      "annotation_modes": ["bbox", "event_state", "identity_signal_optional"],
+      "must_have": ["人", "工具", "作业动作", "普通人负例"]
+    },
+    {
+      "id": "complex_environment",
+      "name_zh": "复杂环境",
+      "positive_examples": ["低光", "雨雾", "强反光", "夜间", "角度差", "多人干扰", "车辆干扰"],
+      "negative_examples": ["清晰白天固定机位"],
+      "boundary_examples": ["局部低光", "镜头污渍", "压缩噪声", "运动模糊"],
+      "annotation_modes": ["environment_tag"],
+      "must_have": ["每类业务事件都应覆盖复杂环境标签"]
+    }
+  ]
+}

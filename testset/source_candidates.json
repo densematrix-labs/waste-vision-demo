@@ -1,0 +1,102 @@
+{
+  "version": "2026-07-13",
+  "notes": "Source candidates for real or near-real waste-room governance event testing. Items marked training_ready=true have labels that can be used directly after format conversion. Items marked review_required=true need manual filtering or relabeling before training.",
+  "sources": [
+    {
+      "id": "unique_outdoor_garbage",
+      "name": "UniqueData/outdoor_garbage",
+      "url": "https://huggingface.co/datasets/UniqueData/outdoor_garbage",
+      "source_type": "image_level_labels",
+      "license_status": "check_dataset_card_before_customer_delivery",
+      "training_ready": true,
+      "review_required": false,
+      "mapped_events": ["overflow_pileup"],
+      "labels": ["is_full", "is_empty", "is_scattered"],
+      "use": "Current demo training source for image-level full/empty/scattered status."
+    },
+    {
+      "id": "taco_litter",
+      "name": "TACO Trash Annotations in Context",
+      "url": "https://tacodataset.org/",
+      "source_type": "instance_segmentation",
+      "license_status": "public_dataset_check_image_license_per_item",
+      "training_ready": true,
+      "review_required": true,
+      "mapped_events": ["bag_on_ground", "overflow_pileup", "complex_environment"],
+      "labels": ["plastic bag", "other plastic", "paper", "carton", "bottle", "can", "litter"],
+      "use": "Seed data for litter/small-object detection; needs filtering for fixed-point waste-room resemblance."
+    },
+    {
+      "id": "keremberke_garbage_object_detection",
+      "name": "keremberke/garbage-object-detection",
+      "url": "https://huggingface.co/datasets/keremberke/garbage-object-detection",
+      "source_type": "object_detection",
+      "license_status": "dataset_card_says_exported_from_roboflow_check_before_customer_delivery",
+      "training_ready": true,
+      "review_required": true,
+      "mapped_events": ["bag_on_ground", "complex_environment"],
+      "labels": ["garbage"],
+      "use": "Large generic garbage object detection source; useful for pretraining, not sufficient for governance events by itself."
+    },
+    {
+      "id": "alexnova_mrs_trash_detection",
+      "name": "alexNova/MRS-Trash-Detection",
+      "url": "https://huggingface.co/datasets/alexNova/MRS-Trash-Detection",
+      "source_type": "object_detection",
+      "license_status": "apache-2.0_on_dataset_card",
+      "training_ready": true,
+      "review_required": true,
+      "mapped_events": ["bag_on_ground", "overflow_pileup", "complex_environment"],
+      "labels": ["trash", "garbage"],
+      "use": "YOLO-format trash detection candidate; needs class and scene filtering."
+    },
+    {
+      "id": "mendeley_stagnant_water_wet_surface",
+      "name": "Dataset of Stagnant Water and Wet Surface with Annotations",
+      "url": "https://data.mendeley.com/datasets/y6zyrnxbfm/4",
+      "source_type": "image_classification_or_detection",
+      "license_status": "CC BY 4.0 on Mendeley Data page",
+      "training_ready": true,
+      "review_required": true,
+      "mapped_events": ["ground_dirty", "complex_environment"],
+      "labels": ["water", "wet surface"],
+      "use": "Negative and boundary cases for ground dirt: wet floor, puddle, reflection, rain-after effects."
+    },
+    {
+      "id": "roboflow_wet_floor_detection",
+      "name": "Wet Floor Detection V1",
+      "url": "https://universe.roboflow.com/priyanshu-jha-rnpw3/wet-floor-detection-v1-qdnta",
+      "source_type": "object_detection",
+      "license_status": "check_roboflow_license_before_download",
+      "training_ready": false,
+      "review_required": true,
+      "mapped_events": ["ground_dirty", "complex_environment"],
+      "labels": ["puddle"],
+      "use": "Candidate for wet/reflection false-positive cases if export access is available."
+    },
+    {
+      "id": "roboflow_littering_behavior",
+      "name": "Littering dataset by thesis",
+      "url": "https://universe.roboflow.com/thesis-kztn8/littering-whlsk",
+      "source_type": "object_detection",
+      "license_status": "check_roboflow_license_before_download",
+      "training_ready": false,
+      "review_required": true,
+      "mapped_events": ["illegal_drop_behavior", "cleaner_worker", "complex_environment"],
+      "labels": ["littering", "person", "trash"],
+      "use": "Candidate source for person-trash interaction and illegal drop behavior."
+    },
+    {
+      "id": "pantausemar_fixed_point",
+      "name": "Semarang PantauSemar fixed-point waste site",
+      "url": "https://pantausemar.semarangkota.go.id/analitik/23a98c3d-401f-476c-8766-b23e4c4babab",
+      "source_type": "fixed_camera_public_page",
+      "license_status": "public_page_for_demo_reference_do_not_bulk_train_without_review",
+      "training_ready": false,
+      "review_required": true,
+      "mapped_events": ["overflow_pileup", "complex_environment"],
+      "labels": [],
+      "use": "Current demo fixed-camera visual reference; good for input-shape validation."
+    }
+  ]
+}
