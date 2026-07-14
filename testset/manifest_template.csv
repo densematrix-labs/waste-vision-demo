@@ -1,4 +1,4 @@
 asset_id,event_id,split,case_type,local_path,source_id,source_url,license_status,media_type,annotation_mode,labels,has_bbox,has_region,has_sequence,can_train,can_show_customer,notes
 example_overflow_001,overflow_pileup,test,positive,,unique_outdoor_garbage,https://huggingface.co/datasets/UniqueData/outdoor_garbage,check_dataset_card_before_customer_delivery,image,event_state,"is_full;is_scattered",false,false,false,true,true,"桶口外溢或桶旁堆积"
-example_dirty_negative_001,ground_dirty,test,negative,,mendeley_stagnant_water_wet_surface,https://data.mendeley.com/datasets/y6zyrnxbfm/4,check_mendeley_license_before_customer_delivery,image,event_state,"wet_surface_reflection",false,false,false,true,false,"雨后反光负例，重点测误报"
+example_dirty_negative_001,ground_dirty,test,negative,,mendeley_stagnant_water_wet_surface,https://data.mendeley.com/datasets/y6zyrnxbfm/4,CC BY 4.0 on Mendeley Data page,image,event_state,"wet_surface_reflection",false,false,false,true,false,"雨后反光负例，重点测误报"
 example_litter_boundary_001,bag_on_ground,test,boundary,,taco_litter,https://tacodataset.org/,check_image_license_per_item,image,bbox,"small_bag_edge",true,true,false,true,true,"画面边缘或远景小目标"
