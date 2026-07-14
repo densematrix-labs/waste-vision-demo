@@ -1,2 +1,7 @@
 .venv-model/
 yolov8s-worldv2.pt
+train_model/data/images.tar.gz
+train_model/work/
+garbage_status_mobilenet.pt
+train_model/models/garbage_status_mobilenet.pt
+trained-model-output.json

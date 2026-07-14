@@ -450,11 +450,11 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检演示</h1>
-            <p class="subtitle">用固定点位画面展示垃圾投放点巡检流程；识别结果由巡检模型生成，现场信号作为客户系统接入项参与工单判断。</p>
+            <p class="subtitle">用固定点位画面展示垃圾投放点巡检流程；识别结果由自训练巡检模型生成，现场信号作为客户系统接入项参与工单判断。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
-            <span class="chip">识别 <strong>模型输出</strong></span>
+            <span class="chip">识别 <strong>自训练模型</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -472,7 +472,7 @@
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
                   <b>选择一张现场截图</b>
-                  <span>上传后仅展示输入图，不生成假框</span>
+                  <span>上传后仅展示输入图，不展示未验证结论</span>
                 </div>
               </div>
             </div>
@@ -488,34 +488,34 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="resultButton">查看模型识别结果</button>
+              <button class="primary" id="resultButton">查看状态识别结果</button>
               <button class="secondary" id="rawButton">查看原始截图</button>
             </div>
 
             <div class="control-group">
-              <label>识别结果</label>
+              <label>状态识别结果</label>
               <div class="legend">
-                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢复核提示：巡检模型输出</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>容器主体定位：巡检模型输出</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢风险：自训练巡检模型输出</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>周边散落：自训练巡检模型输出</span></div>
               </div>
             </div>
 
-            <p class="footnote">当前样例使用公开固定点位画面作为输入。识别框由巡检模型输出，上传客户现场截图时不展示未验证结果。</p>
+            <p class="footnote">当前样例使用公开固定点位画面作为输入。状态结果由真实标注数据训练出的巡检模型输出，上传客户现场截图时不展示未验证结果。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">模型识别结果</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">状态识别结果</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
             <button id="showRaw">原始固定机位截图</button>
-            <button id="showResult" class="active">模型识别结果</button>
+            <button id="showResult" class="active">状态识别结果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./scene-our-model.jpg" alt="固定点位垃圾投放点模型识别结果" />
-            <div class="image-caption" id="caption">固定点位画面经巡检模型识别：定位投放容器，并给出满溢复核提示。</div>
+            <img id="sceneImage" src="./scene-trained-model.jpg" alt="固定点位垃圾投放点状态识别结果" />
+            <div class="image-caption" id="caption">固定点位画面经自训练巡检模型识别：输出满溢风险、周边散落和未满载状态。</div>
           </div>
         </section>
 
@@ -530,24 +530,24 @@
                 <div class="object-top">
                   <div class="object-name">
                     <b>满溢风险</b>
-                    <span>模型输出：满溢复核提示</span>
+                    <span>模型输出：满溢风险状态</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
-                <div class="reason">模型在容器上方堆高区域给出满溢复核提示，适合作为清运优先级判断依据。</div>
+                <div class="reason">自训练模型给出满溢风险状态，适合作为清运优先级判断依据。</div>
                 <div class="action-note">建议进入清运复核队列，结合客户现场桶内高度和清运计划确定派单优先级。</div>
               </article>
 
               <article class="object-card">
                 <div class="object-top">
                   <div class="object-name">
-                    <b>箱体定位</b>
-                    <span>模型输出：容器主体定位</span>
+                    <b>周边散落</b>
+                    <span>模型输出：点位散落状态</span>
                   </div>
-                  <div class="confidence">定位</div>
+                  <div class="confidence">复核</div>
                 </div>
-                <div class="reason">识别结果定位到垃圾箱主体，可作为满溢判断的固定参照区域。</div>
-                <div class="action-note">部署时将投放口、桶身、地面警戒区预先标定，减少误报。</div>
+                <div class="reason">自训练模型给出周边散落状态，适合作为保洁复核和现场处置判断依据。</div>
+                <div class="action-note">部署时将投放口、桶身、地面警戒区作为客户点位配置，减少非目标区域干扰。</div>
               </article>
             </div>
           </div>
@@ -575,12 +575,12 @@
 
       function setMode(mode) {
         const isRaw = mode === "raw";
-        sceneImage.src = isRaw ? "./scene-fixed-input.jpg" : "./scene-our-model.jpg";
-        sceneImage.alt = isRaw ? "固定点位垃圾投放点原始截图" : "固定点位垃圾投放点模型识别结果";
+        sceneImage.src = isRaw ? "./scene-fixed-input.jpg" : "./scene-trained-model.jpg";
+        sceneImage.alt = isRaw ? "固定点位垃圾投放点原始截图" : "固定点位垃圾投放点状态识别结果";
         caption.textContent = isRaw
           ? "TPS BULU LOR 固定点位，公开原始截图：作为巡检输入画面。"
-          : "固定点位画面经巡检模型识别：定位投放容器，并给出满溢复核提示。";
-        stageStatus.textContent = isRaw ? "原始固定机位截图" : "模型识别结果";
+          : "固定点位画面经自训练巡检模型识别：输出满溢风险、周边散落和未满载状态。";
+        stageStatus.textContent = isRaw ? "原始固定机位截图" : "状态识别结果";
         showRaw.classList.toggle("active", isRaw);
         showResult.classList.toggle("active", !isRaw);
         imageSize.textContent = "1920 × 1080";

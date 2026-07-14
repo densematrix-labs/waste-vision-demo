@@ -1,0 +1,17 @@
+{
+  "dataset": "UniqueData/outdoor_garbage",
+  "classes": [
+    "is_full",
+    "is_empty",
+    "is_scattered"
+  ],
+  "train_images": 80,
+  "validation_images": 20,
+  "validation_exact_match": 0.4,
+  "validation_macro_f1": 0.3523809523809524,
+  "validation_per_class_f1": {
+    "is_full": 0.8571428571428571,
+    "is_empty": 0.0,
+    "is_scattered": 0.2
+  }
+}
