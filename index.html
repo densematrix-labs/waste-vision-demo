@@ -272,7 +272,7 @@
       .sample-button {
         width: 100%;
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 56px 1fr auto;
         gap: 8px;
         align-items: center;
         padding: 10px;
@@ -300,6 +300,14 @@
         color: var(--cyan);
       }
 
+      .sample-button img {
+        width: 56px;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 5px;
+        border: 1px solid var(--line);
+      }
+
       .swatch {
         width: 12px;
         height: 12px;
@@ -309,7 +317,7 @@
       .stage {
         min-height: 690px;
         display: grid;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto 1fr auto;
       }
 
       .stage-header {
@@ -397,6 +405,42 @@
         line-height: 1.5;
       }
 
+      .customer-gallery {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        padding: 0 14px 14px;
+      }
+
+      .gallery-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(20, 34, 31, 0.74);
+        overflow: hidden;
+        color: var(--text);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .gallery-card.active,
+      .gallery-card:hover {
+        border-color: var(--lime);
+      }
+
+      .gallery-card img {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        display: block;
+      }
+
+      .gallery-card span {
+        display: block;
+        padding: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
       .object-card {
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -477,6 +521,10 @@
         .stage {
           min-height: auto;
         }
+
+        .customer-gallery {
+          grid-template-columns: 1fr 1fr;
+        }
       }
     </style>
   </head>
@@ -524,8 +572,8 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="resultButton">查看状态识别结果</button>
-              <button class="secondary" id="rawButton">查看原始截图</button>
+              <button class="primary" id="resultButton">查看公开模型样例</button>
+              <button class="secondary" id="rawButton">查看公开原始截图</button>
             </div>
 
             <div class="control-group">
@@ -550,17 +598,18 @@
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">状态识别结果</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">客户现场样例：满溢/堆积</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
-            <button id="showRaw">原始固定机位截图</button>
-            <button id="showResult" class="active">状态识别结果</button>
+            <button id="showRaw">公开原始截图</button>
+            <button id="showResult">公开模型样例</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./scene-trained-model.jpg" alt="固定点位垃圾投放点状态识别结果" />
-            <div class="image-caption" id="caption">固定点位画面经巡检模型演示识别：只围绕检测区域与地面警戒区复核满溢、散落和脏污风险。</div>
+            <img id="sceneImage" src="./customer-scenes/pileup-bin-area.jpg" alt="客户现场样例：满溢/堆积" />
+            <div class="image-caption" id="caption">客户现场训练图集样例：桶旁堆积和外露垃圾集中在投放点附近，适合用于清运复核与满溢风险压测。</div>
           </div>
+          <div class="customer-gallery" id="customerGallery"></div>
         </section>
 
         <section class="panel right">
@@ -629,6 +678,7 @@
       const resultButton = document.getElementById("resultButton");
       const fileInput = document.getElementById("fileInput");
       const sampleList = document.getElementById("sampleList");
+      const customerGallery = document.getElementById("customerGallery");
 
       const customerSamples = [
         {
@@ -668,11 +718,18 @@
         showRaw.classList.toggle("active", isRaw);
         showResult.classList.toggle("active", !isRaw);
         setActiveSample();
+        setActiveGallery();
         imageSize.textContent = "1920 × 1080";
       }
 
       function setActiveSample(index) {
         [...sampleList.querySelectorAll("button")].forEach((button, buttonIndex) => {
+          button.classList.toggle("active", buttonIndex === index);
+        });
+      }
+
+      function setActiveGallery(index) {
+        [...customerGallery.querySelectorAll("button")].forEach((button, buttonIndex) => {
           button.classList.toggle("active", buttonIndex === index);
         });
       }
@@ -689,16 +746,32 @@
         showRaw.classList.remove("active");
         showResult.classList.remove("active");
         setActiveSample(index);
+        setActiveGallery(index);
       }
 
       customerSamples.forEach((sample, index) => {
         const button = document.createElement("button");
         button.className = "sample-button";
         button.type = "button";
-        button.innerHTML = `<span>${sample.title}</span><b>查看</b>`;
+        button.innerHTML = `<img src="${sample.image}" alt="" /><span>${sample.title}</span><b>查看</b>`;
         button.addEventListener("click", () => showCustomerSample(index));
         sampleList.appendChild(button);
+
+        const galleryButton = document.createElement("button");
+        galleryButton.className = `gallery-card${index === 0 ? " active" : ""}`;
+        galleryButton.type = "button";
+        galleryButton.innerHTML = `<img src="${sample.image}" alt="" /><span>${sample.title}</span>`;
+        galleryButton.addEventListener("click", () => showCustomerSample(index));
+        customerGallery.appendChild(galleryButton);
       });
+
+      setActiveSample(0);
+      sceneImage.addEventListener("load", () => {
+        imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+      });
+      if (sceneImage.complete) {
+        imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+      }
 
       showRaw.addEventListener("click", () => setMode("raw"));
       rawButton.addEventListener("click", () => setMode("raw"));
@@ -719,6 +792,7 @@
         showRaw.classList.remove("active");
         showResult.classList.remove("active");
         setActiveSample();
+        setActiveGallery();
       });
     </script>
   </body>
