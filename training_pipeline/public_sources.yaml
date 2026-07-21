@@ -35,3 +35,38 @@ datasets:
     url: https://www.kaggle.com/datasets/viswaprakash1990/garbage-detection
     status: Kaggle download if credentials are present
     use: trash_object detection supplement for waste-material boxes
+  kaggle_garbage_classification_yolo:
+    name: Garbage Classification Dataset
+    kaggle_slug: arshnoor7389/garbage-classification-dataset
+    url: https://www.kaggle.com/datasets/arshnoor7389/garbage-classification-dataset
+    status: large archive verified reachable through KaggleHub; not included in current run because the archive is about 4 GB and needs schema inspection before mapping
+    use: candidate trash_object detection supplement if YOLO labels are clean after inspection
+  kaggle_household_trash_recycling:
+    name: Household Trash Recycling Dataset
+    kaggle_slug: youssefelebiary/household-trash-recycling-dataset
+    url: https://www.kaggle.com/datasets/youssefelebiary/household-trash-recycling-dataset
+    status: candidate source from Kaggle search; requires download and schema inspection
+    use: candidate trash_object detection supplement for household waste boxes
+  kaggle_trash_detection:
+    name: Trash Detection
+    kaggle_slug: alyyan/trash-detection
+    url: https://www.kaggle.com/datasets/alyyan/trash-detection
+    status: candidate source from Kaggle search; requires download and schema inspection
+    use: candidate trash_object detection supplement for trash/dirt boxes
+  kaggle_waste_classification_yolov8:
+    name: Waste Classification - YOLOv8 dataset
+    kaggle_slug: spellsharp/garbage-data
+    url: https://www.kaggle.com/datasets/spellsharp/garbage-data
+    status: candidate source from Kaggle search; requires download and schema inspection
+    use: candidate trash_object detection supplement if classes map cleanly
+  kaggle_trash_detection_image_dataset:
+    name: Trash-detection image dataset
+    kaggle_slug: ahnaftahmeed/trash-detection-image-dataset
+    url: https://www.kaggle.com/datasets/ahnaftahmeed/trash-detection-image-dataset
+    status: candidate source from Kaggle search; requires download and COCO/YOLO schema inspection
+    use: candidate trash_object detection supplement for street trash boxes
+  roboflow_yolov5_garbage_detection:
+    name: Roboflow Yolov5 garbage detection
+    url: https://universe.roboflow.com/garbage-detection-oa9nh/yolov5-garbage-detection
+    status: requires Roboflow export/API key
+    use: candidate trash_object detection supplement; 5980-image Roboflow source

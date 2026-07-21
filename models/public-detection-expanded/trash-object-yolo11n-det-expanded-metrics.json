@@ -1,0 +1,78 @@
+{
+  "model": "YOLO11n detection",
+  "task": "expanded public trash_object detection supplement",
+  "classes": ["trash_object"],
+  "training": {
+    "run_name": "trash_object_public_expanded",
+    "command": "TACO_LIMIT=80 INNOVATIANA_LIMIT=3000 EPOCHS=4 RUN_NAME=trash_object_public_expanded bash training_pipeline/train_public_detection.sh",
+    "epochs": 4,
+    "image_size": 320,
+    "batch": 8,
+    "duration_hours": 0.396
+  },
+  "dataset": {
+    "train_images": 2464,
+    "val_images": 616,
+    "total_images": 3080,
+    "val_instances": 4045,
+    "sources": [
+      {
+        "name": "TACO",
+        "added_images": 80,
+        "role": "loose litter / trash object detection supplement"
+      },
+      {
+        "name": "Innovatiana Garbage Detection via Kaggle",
+        "available_image_label_pairs": 10464,
+        "added_images": 3000,
+        "role": "waste-material box detection supplement"
+      }
+    ]
+  },
+  "validation": {
+    "images": 616,
+    "instances": 4045,
+    "precision": 0.629,
+    "recall": 0.451,
+    "map50": 0.500,
+    "map50_95": 0.303
+  },
+  "previous_baseline": {
+    "total_images": 200,
+    "train_images": 160,
+    "val_images": 40,
+    "val_instances": 140,
+    "precision": 0.548,
+    "recall": 0.414,
+    "map50": 0.407,
+    "map50_95": 0.238
+  },
+  "customer_scene_smoke_test": {
+    "confidence_threshold": 0.15,
+    "results": [
+      {
+        "image": "customer-scenes/bulky-waste-pile.jpg",
+        "detections": 4
+      },
+      {
+        "image": "customer-scenes/dirty-ground-scatter.jpg",
+        "detections": 7
+      },
+      {
+        "image": "customer-scenes/overflow-bin-row.jpg",
+        "detections": 3
+      },
+      {
+        "image": "customer-scenes/overflow-yard-pile.jpg",
+        "detections": 9
+      }
+    ]
+  },
+  "blocked_or_deferred_sources": {
+    "roboflow_overflow": "ROBOFLOW_API_KEY or manual export is required before adding full / empty / overflow scene-status data.",
+    "roboflow_yolov5_garbage_detection": "Roboflow export/API access is required before adding this 5980-image candidate source.",
+    "mendeley_trash_detection": "The static page did not expose a stable direct file URL in this environment.",
+    "large_kaggle_candidates": "Several Kaggle candidates are documented in training_pipeline/public_sources.yaml; the reachable 4 GB archive needs schema inspection before mapping classes into trash_object."
+  },
+  "boundary": "This model detects visible trash objects from public detection data. It supplements customer RB scene classification and should not be presented as an overflow / empty / full scene-status model."
+}
