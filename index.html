@@ -568,7 +568,7 @@
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
-            <span class="chip">识别 <strong>异常事件</strong></span>
+            <span class="chip">模型 <strong id="modelStatus">加载中</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -665,11 +665,13 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"></script>
     <script>
       const sceneImage = document.getElementById("sceneImage");
       const caption = document.getElementById("caption");
       const stageStatus = document.getElementById("stageStatus");
       const imageSize = document.getElementById("imageSize");
+      const modelStatus = document.getElementById("modelStatus");
       const analysisOverlay = document.getElementById("analysisOverlay");
       const eventCount = document.getElementById("eventCount");
       const results = document.getElementById("results");
@@ -747,20 +749,9 @@
         }
       ];
 
-      const trainingSamples = [
-        ["overflow", "./training-scenes/overflow/overflow-01.jpg"],
-        ["overflow", "./training-scenes/overflow/overflow-03.jpg"],
-        ["litter", "./training-scenes/litter/litter-01.jpg"],
-        ["litter", "./training-scenes/litter/litter-02.jpg"],
-        ["litter", "./training-scenes/litter/litter-03.jpg"],
-        ["dirty", "./training-scenes/dirty/dirty-01.jpg"],
-        ["dirty", "./training-scenes/dirty/dirty-02.jpg"],
-        ["dirty", "./training-scenes/dirty/dirty-03.jpg"],
-        ["normal", "./training-scenes/normal/normal-01.jpg"],
-        ["normal", "./training-scenes/normal/normal-02.jpg"],
-        ["normal", "./training-scenes/normal/normal-03.jpg"]
-      ];
-
+      const modelUrl = "./models/waste-yolo11n-cls.onnx";
+      const modelClasses = ["dirty", "litter", "normal", "overflow"];
+      const modelInputSize = 224;
       let currentMode = "result";
       let currentImage = {
         url: customerSamples[0].image,
@@ -768,9 +759,10 @@
         caption: customerSamples[0].caption,
         sampleIndex: 0
       };
-      let model = [];
+      let yoloSession;
       let modelReady = false;
       let modelReadyPromise;
+      let lastPredictions = [];
 
       function setMode(mode) {
         currentMode = mode;
@@ -819,112 +811,95 @@
       function loadImage(url) {
         return new Promise((resolve, reject) => {
           const image = new Image();
+          image.crossOrigin = "anonymous";
           image.onload = () => resolve(image);
           image.onerror = reject;
           image.src = url;
         });
       }
 
-      function extractFeaturesFromImage(image) {
+      function setLoadingState(message = "正在读取现场画面并判断异常事件。") {
+        analysisOverlay.innerHTML = `<b>识别中</b><span>${message}</span>`;
+        eventCount.textContent = "识别中";
+      }
+
+      function setErrorState(message) {
+        analysisOverlay.innerHTML = `<b>模型加载失败</b><span>${message}</span>`;
+        eventCount.textContent = "异常";
+        results.innerHTML = "";
+        workOrderText.textContent = "当前无法生成可靠判断，请刷新页面或检查模型资源。";
+      }
+
+      async function loadYoloModel() {
+        if (!window.ort) {
+          throw new Error("ONNX Runtime 未加载");
+        }
+        ort.env.wasm.numThreads = 1;
+        ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
+        yoloSession = await ort.InferenceSession.create(modelUrl, {
+          executionProviders: ["wasm"]
+        });
+        modelReady = true;
+        modelStatus.textContent = "YOLO 已加载";
+        await recognizeCurrentImage();
+      }
+
+      function preprocessImage(image) {
         const canvas = document.createElement("canvas");
-        const width = 64;
-        const height = 36;
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = modelInputSize;
+        canvas.height = modelInputSize;
         const context = canvas.getContext("2d", { willReadFrequently: true });
-        context.drawImage(image, 0, 0, width, height);
-        const pixels = context.getImageData(0, 0, width, height).data;
-        const features = [];
-        const sums = new Array(24).fill(0);
-        let count = 0;
-        let dark = 0;
-        let bright = 0;
-        let green = 0;
-        let red = 0;
-        let blue = 0;
-        let yellow = 0;
-        let lowerClutter = 0;
-        let edgeEnergy = 0;
-        for (let y = 0; y < height; y += 1) {
-          for (let x = 0; x < width; x += 1) {
-            const index = (y * width + x) * 4;
-            const r = pixels[index] / 255;
-            const g = pixels[index + 1] / 255;
-            const b = pixels[index + 2] / 255;
-            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-            sums[0] += r;
-            sums[1] += g;
-            sums[2] += b;
-            sums[3] += luma;
-            const isDark = luma < 0.22;
-            const isBright = luma > 0.76;
-            const isGreen = g > r * 1.12 && g > b * 1.12;
-            const isRed = r > g * 1.18 && r > b * 1.18;
-            const isBlue = b > r * 1.15 && b > g * 1.08;
-            const isYellow = r > 0.46 && g > 0.38 && b < 0.32;
-            dark += isDark ? 1 : 0;
-            bright += isBright ? 1 : 0;
-            green += isGreen ? 1 : 0;
-            red += isRed ? 1 : 0;
-            blue += isBlue ? 1 : 0;
-            yellow += isYellow ? 1 : 0;
-            lowerClutter += y > height * 0.5 && (isDark || isBright || isRed || isYellow) ? 1 : 0;
-            if (x > 0 && y > 0) {
-              const left = ((y * width + (x - 1)) * 4);
-              const top = (((y - 1) * width + x) * 4);
-              const leftLuma = (pixels[left] + pixels[left + 1] + pixels[left + 2]) / 765;
-              const topLuma = (pixels[top] + pixels[top + 1] + pixels[top + 2]) / 765;
-              edgeEnergy += Math.abs(luma - leftLuma) + Math.abs(luma - topLuma);
-            }
-            const gx = Math.min(3, Math.floor((x / width) * 4));
-            const gy = Math.min(2, Math.floor((y / height) * 3));
-            sums[4 + gy * 4 + gx] += luma;
-            count += 1;
-          }
+        context.drawImage(image, 0, 0, modelInputSize, modelInputSize);
+        const pixels = context.getImageData(0, 0, modelInputSize, modelInputSize).data;
+        const area = modelInputSize * modelInputSize;
+        const input = new Float32Array(3 * area);
+        for (let index = 0; index < area; index += 1) {
+          const pixelIndex = index * 4;
+          input[index] = pixels[pixelIndex] / 255;
+          input[area + index] = pixels[pixelIndex + 1] / 255;
+          input[area * 2 + index] = pixels[pixelIndex + 2] / 255;
         }
-        features.push(sums[0] / count, sums[1] / count, sums[2] / count, sums[3] / count);
-        features.push(dark / count, bright / count, green / count, red / count, blue / count, yellow / count);
-        features.push(lowerClutter / count, edgeEnergy / count);
-        for (let index = 4; index < sums.length; index += 1) {
-          features.push(sums[index] / (count / 12));
-        }
-        return features;
+        return new ort.Tensor("float32", input, [1, 3, modelInputSize, modelInputSize]);
       }
 
-      function distance(a, b) {
-        let total = 0;
-        for (let index = 0; index < a.length; index += 1) {
-          const delta = a[index] - b[index];
-          total += delta * delta;
-        }
-        return Math.sqrt(total / a.length);
+      function softmax(values) {
+        const maxValue = Math.max(...values);
+        const exponentials = values.map((value) => Math.exp(value - maxValue));
+        const total = exponentials.reduce((sum, value) => sum + value, 0);
+        return exponentials.map((value) => value / total);
       }
 
-      function predict(features) {
-        if (!model.length) {
+      function toProbabilities(values) {
+        const total = values.reduce((sum, value) => sum + value, 0);
+        const alreadyNormalized = total > 0.98 && total < 1.02 && values.every((value) => value >= 0 && value <= 1);
+        return alreadyNormalized ? values : softmax(values);
+      }
+
+      async function predictWithYolo(image) {
+        if (!yoloSession) {
           return [];
         }
-        const nearestByEvent = model.reduce((accumulator, item) => {
-          const itemDistance = distance(features, item.features);
-          if (!accumulator[item.event] || itemDistance < accumulator[item.event].distance) {
-            accumulator[item.event] = {
-              event: item.event,
-              distance: itemDistance
-            };
-          }
-          return accumulator;
-        }, {});
-        const ranked = Object.values(nearestByEvent)
-          .sort((a, b) => a.distance - b.distance)
-          .slice(0, 4);
-        const scale = Math.max(ranked[0]?.distance || 0.01, 0.01);
-        return ranked.map((item, index) => {
-          const score = Math.max(0.28, Math.min(0.98, Math.exp(-(item.distance - ranked[0].distance) / scale * 1.7) - index * 0.07));
-          return {
-            event: item.event,
+        const inputName = yoloSession.inputNames[0];
+        const outputName = yoloSession.outputNames[0];
+        const output = await yoloSession.run({ [inputName]: preprocessImage(image) });
+        const rawScores = Array.from(output[outputName].data);
+        const probabilities = toProbabilities(rawScores);
+        return probabilities
+          .map((score, index) => ({
+            event: modelClasses[index],
             score
-          };
-        });
+          }))
+          .sort((a, b) => b.score - a.score);
+      }
+
+      function normalizePredictions(predictions) {
+        if (!predictions.length) {
+          return [];
+        }
+        return predictions.map((item) => ({
+          event: item.event,
+          score: Math.max(0.01, Math.min(0.99, item.score))
+        }));
       }
 
       function renderPrediction(predictions) {
@@ -934,13 +909,15 @@
           results.innerHTML = "";
           return;
         }
-        const top = predictions[0];
+        const normalized = normalizePredictions(predictions);
+        lastPredictions = normalized;
+        const top = normalized[0];
         const event = eventCatalog[top.event];
         const confidence = `${Math.round(top.score * 100)}%`;
         analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>${event.action}</span>`;
-        eventCount.textContent = `${predictions.length} 项`;
+        eventCount.textContent = `${normalized.length} 项`;
         workOrderText.textContent = workOrderCopy[top.event];
-        results.innerHTML = predictions.slice(0, 3).map((item) => {
+        results.innerHTML = normalized.slice(0, 3).map((item) => {
           const detail = eventCatalog[item.event];
           return `
             <article class="object-card">
@@ -959,36 +936,30 @@
       }
 
       async function recognizeImageElement(image) {
-        if (!modelReady && modelReadyPromise) {
+        if (!modelReadyPromise) {
+          modelReadyPromise = loadYoloModel().catch((error) => {
+            modelStatus.textContent = "加载失败";
+            setErrorState(error.message || "模型资源无法读取。");
+            throw error;
+          });
+        }
+        if (!modelReady) {
           await modelReadyPromise;
         }
-        const features = extractFeaturesFromImage(image);
-        return predict(features);
+        return predictWithYolo(image);
       }
 
       async function recognizeCurrentImage() {
-        if (!modelReady || currentMode !== "result") return;
+        if (currentMode !== "result") return;
         analysisOverlay.classList.remove("hidden");
-        analysisOverlay.innerHTML = "<b>识别中</b><span>正在读取现场画面并判断异常事件。</span>";
-        const image = await loadImage(currentImage.url);
-        imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
-        renderPrediction(await recognizeImageElement(image));
-      }
-
-      async function trainModel() {
-        const labeledSamples = [
-          ...trainingSamples,
-          ...customerSamples.map((sample) => [sample.event, sample.image])
-        ];
-        model = await Promise.all(labeledSamples.map(async ([event, imagePath]) => {
-          const image = await loadImage(imagePath);
-          return {
-            event,
-            features: extractFeaturesFromImage(image)
-          };
-        }));
-        modelReady = true;
-        recognizeCurrentImage();
+        setLoadingState();
+        try {
+          const image = await loadImage(currentImage.url);
+          imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
+          renderPrediction(await recognizeImageElement(image));
+        } catch (error) {
+          setErrorState(error.message || "现场画面无法识别。");
+        }
       }
 
       customerSamples.forEach((sample, index) => {
@@ -1024,9 +995,13 @@
         const file = event.target.files?.[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
-        sceneImage.onload = () => {
+        sceneImage.onload = async () => {
           imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
-          recognizeImageElement(sceneImage).then(renderPrediction);
+          try {
+            renderPrediction(await recognizeImageElement(sceneImage));
+          } catch (error) {
+            setErrorState(error.message || "现场截图无法识别。");
+          }
         };
         currentImage = {
           url,
@@ -1044,10 +1019,19 @@
         setActiveGallery();
         currentMode = "result";
         analysisOverlay.classList.remove("hidden");
-        analysisOverlay.innerHTML = "<b>识别中</b><span>正在读取现场画面并判断异常事件。</span>";
+        setLoadingState();
       });
 
-      modelReadyPromise = trainModel();
+      setLoadingState("正在加载 YOLO 现场状态模型。");
+      modelReadyPromise = loadYoloModel().catch((error) => {
+        modelStatus.textContent = "加载失败";
+        setErrorState(error.message || "模型资源无法读取。");
+      });
+      window.wasteVisionDemo = {
+        recognizeCurrentImage,
+        getLastPredictions: () => lastPredictions,
+        isModelReady: () => modelReady
+      };
     </script>
   </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "inputSize": 224,
+  "classes": ["dirty", "litter", "normal", "overflow"],
+  "labels": {
+    "dirty": "地面脏污",
+    "litter": "周边散落",
+    "normal": "未发现明显异常",
+    "overflow": "满溢风险"
+  }
+}

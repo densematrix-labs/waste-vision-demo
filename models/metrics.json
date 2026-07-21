@@ -1,0 +1,12 @@
+{
+  "model": "YOLO11n-cls",
+  "task": "image classification",
+  "classes": ["dirty", "litter", "normal", "overflow"],
+  "trainImages": 15,
+  "valImages": 15,
+  "epochs": 80,
+  "imageSize": 224,
+  "top1Accuracy": 1.0,
+  "top5Accuracy": 1.0,
+  "trainingNotes": "Small customer-image prototype model trained in Docker with Ultralytics YOLO. Train and validation folders currently contain the same weakly labeled image set, so this metric proves the demo model fits the selected samples and is not a production generalization claim."
+}

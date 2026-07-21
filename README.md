@@ -5,7 +5,7 @@
 页面支持：
 
 - 使用固定点位原始截图查看输入画面
-- 使用浏览器端轻量识别流程生成状态判断
+- 使用已训练的 YOLO11n 分类模型生成状态判断
 - 展示桶内高度、开盖记录、清运计划等现场信号接入项
 - 展示满溢风险、周边散落、地面脏污、正常状态和工单建议
 - 支持上传现场截图并生成同一套事件判断结果
@@ -14,17 +14,30 @@
 
 https://densematrix-labs.github.io/waste-vision-demo/
 
-## 口径边界
+## 模型
 
-当前页面不是生产级训练模型交付物，也不应对外表述为已完成 YOLO 或分割模型训练。页面里的识别结果用于说明交互链路、现场事件分类方式和客户沟通口径。
+当前页面加载仓库内的 YOLO11n 分类模型进行浏览器端 ONNX 推理：
 
-如果需要正式交付“真实训练出来的模型”，应另行完成：
+```bash
+models/waste-yolo11n-cls.onnx
+models/waste-yolo11n-cls.pt
+models/labels.json
+models/metrics.json
+```
 
-- 客户现场数据清洗和去重
-- 正常、满溢、散落、脏污等类别标注
-- 框选或分割标注规范
-- 训练、验证和留出测试集划分
-- 线上推理服务和误报/漏报验收
+训练命令在 Docker 内执行：
+
+```bash
+docker run --rm -v "$PWD:/workspace" -w /workspace python:3.11-slim bash -lc 'apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 libgl1 libxcb1 libxext6 && pip install --no-cache-dir ultralytics onnx onnxslim && yolo classify train data=/workspace/yolo_dataset model=yolo11n-cls.pt epochs=80 imgsz=224 batch=4 workers=0 erasing=0.0 degrees=0 translate=0 scale=0 fliplr=0.0 hsv_h=0 hsv_s=0 hsv_v=0 project=/workspace/yolo_runs name=waste_cls exist_ok=True'
+```
+
+训练数据当前为 15 张现场图片，类别为 `dirty`、`litter`、`normal`、`overflow`。训练配置关闭随机增强，用于让 demo 中的客户现场样张和上传链路走实际模型推理。内置验证集和训练集目前使用同一批弱标注图片，最终 Top-1 / Top-5 为 100%，该指标只说明模型已拟合这批样张，不代表生产泛化效果。
+
+## 边界
+
+当前模型是 YOLO 分类模型，只输出整张画面的状态类别和置信度。它不是 YOLO detection 或 segmentation 模型，不会输出真实框选坐标或像素级分割结果。
+
+如果需要正式交付“检测框/分割框”的模型，需要补充框选或分割标注，并重新划分训练集、验证集和留出测试集后训练 YOLO detection/segmentation 模型。
 
 ## 现场画面
 
