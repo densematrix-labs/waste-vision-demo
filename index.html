@@ -391,6 +391,52 @@
         object-fit: cover;
       }
 
+      .detection-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .detection-layer.hidden {
+        display: none;
+      }
+
+      .detection-box {
+        position: absolute;
+        border: 2px solid var(--lime);
+        border-radius: 6px;
+        box-shadow:
+          0 0 0 1px rgba(5, 9, 8, 0.75),
+          0 0 24px rgba(184, 242, 93, 0.38);
+        background: rgba(184, 242, 93, 0.08);
+      }
+
+      .detection-box::before {
+        content: attr(data-label);
+        position: absolute;
+        left: -2px;
+        top: -28px;
+        max-width: 220px;
+        padding: 5px 7px;
+        border-radius: 5px 5px 5px 0;
+        color: #0b1110;
+        background: var(--lime);
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .detection-box.low {
+        border-color: var(--amber);
+        background: rgba(243, 201, 105, 0.08);
+      }
+
+      .detection-box.low::before {
+        background: var(--amber);
+      }
+
       .image-caption {
         position: absolute;
         left: 12px;
@@ -569,6 +615,8 @@
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
             <span class="chip">模型 <strong id="modelStatus">加载中</strong></span>
+            <span class="chip">推理 <strong id="inferenceTime">--</strong></span>
+            <span class="chip">框 <strong id="boxCount">--</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -638,6 +686,7 @@
           </div>
           <div class="image-shell">
             <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg" alt="现场案例：满溢/堆积" />
+            <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
               <span>正在读取现场画面并判断异常事件。</span>
@@ -672,7 +721,10 @@
       const stageStatus = document.getElementById("stageStatus");
       const imageSize = document.getElementById("imageSize");
       const modelStatus = document.getElementById("modelStatus");
+      const inferenceTime = document.getElementById("inferenceTime");
+      const boxCount = document.getElementById("boxCount");
       const analysisOverlay = document.getElementById("analysisOverlay");
+      const detectionLayer = document.getElementById("detectionLayer");
       const eventCount = document.getElementById("eventCount");
       const results = document.getElementById("results");
       const workOrderText = document.getElementById("workOrderText");
@@ -749,9 +801,13 @@
         }
       ];
 
-      const modelUrl = "./models/waste-yolo11n-cls.onnx";
+      const classifierModelUrl = "./models/waste-yolo11n-cls.onnx";
+      const detectionModelUrl = "./models/public-detection-expanded/trash-object-yolo11n-det-expanded.onnx";
       const modelClasses = ["dirty", "litter", "normal", "overflow"];
       const modelInputSize = 224;
+      const detectionInputSize = 320;
+      const detectionConfidenceThreshold = 0.25;
+      const detectionIouThreshold = 0.45;
       let currentMode = "result";
       let currentImage = {
         url: customerSamples[0].image,
@@ -759,19 +815,23 @@
         caption: customerSamples[0].caption,
         sampleIndex: 0
       };
-      let yoloSession;
+      let classifierSession;
+      let detectionSession;
       let modelReady = false;
       let modelReadyPromise;
       let lastPredictions = [];
+      let lastDetections = [];
 
       function setMode(mode) {
         currentMode = mode;
         showRaw.classList.toggle("active", mode === "raw");
         showResult.classList.toggle("active", mode === "result");
         analysisOverlay.classList.toggle("hidden", mode === "raw");
+        detectionLayer.classList.toggle("hidden", mode === "raw");
         if (mode === "raw") {
           caption.textContent = "基础画面：用于查看固定机位视角、投放点范围和地面警戒区。";
           stageStatus.textContent = "基础画面";
+          boxCount.textContent = "--";
           return;
         }
         caption.textContent = currentImage.caption;
@@ -821,11 +881,17 @@
       function setLoadingState(message = "正在读取现场画面并判断异常事件。") {
         analysisOverlay.innerHTML = `<b>识别中</b><span>${message}</span>`;
         eventCount.textContent = "识别中";
+        inferenceTime.textContent = "--";
+        boxCount.textContent = "--";
+        detectionLayer.innerHTML = "";
       }
 
       function setErrorState(message) {
         analysisOverlay.innerHTML = `<b>模型加载失败</b><span>${message}</span>`;
         eventCount.textContent = "异常";
+        inferenceTime.textContent = "--";
+        boxCount.textContent = "--";
+        detectionLayer.innerHTML = "";
         results.innerHTML = "";
         workOrderText.textContent = "当前无法生成可靠判断，请刷新页面或检查模型资源。";
       }
@@ -836,15 +902,16 @@
         }
         ort.env.wasm.numThreads = 1;
         ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
-        yoloSession = await ort.InferenceSession.create(modelUrl, {
-          executionProviders: ["wasm"]
-        });
+        [classifierSession, detectionSession] = await Promise.all([
+          ort.InferenceSession.create(classifierModelUrl, { executionProviders: ["wasm"] }),
+          ort.InferenceSession.create(detectionModelUrl, { executionProviders: ["wasm"] })
+        ]);
         modelReady = true;
-        modelStatus.textContent = "YOLO 已加载";
+        modelStatus.textContent = "YOLO 检测已加载";
         await recognizeCurrentImage();
       }
 
-      function preprocessImage(image) {
+      function preprocessClassifierImage(image) {
         const canvas = document.createElement("canvas");
         canvas.width = modelInputSize;
         canvas.height = modelInputSize;
@@ -862,6 +929,36 @@
         return new ort.Tensor("float32", input, [1, 3, modelInputSize, modelInputSize]);
       }
 
+      function preprocessDetectionImage(image) {
+        const canvas = document.createElement("canvas");
+        canvas.width = detectionInputSize;
+        canvas.height = detectionInputSize;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.fillStyle = "rgb(114, 114, 114)";
+        context.fillRect(0, 0, detectionInputSize, detectionInputSize);
+        const scale = Math.min(detectionInputSize / image.naturalWidth, detectionInputSize / image.naturalHeight);
+        const width = Math.round(image.naturalWidth * scale);
+        const height = Math.round(image.naturalHeight * scale);
+        const padX = Math.floor((detectionInputSize - width) / 2);
+        const padY = Math.floor((detectionInputSize - height) / 2);
+        context.drawImage(image, padX, padY, width, height);
+        const pixels = context.getImageData(0, 0, detectionInputSize, detectionInputSize).data;
+        const area = detectionInputSize * detectionInputSize;
+        const input = new Float32Array(3 * area);
+        for (let index = 0; index < area; index += 1) {
+          const pixelIndex = index * 4;
+          input[index] = pixels[pixelIndex] / 255;
+          input[area + index] = pixels[pixelIndex + 1] / 255;
+          input[area * 2 + index] = pixels[pixelIndex + 2] / 255;
+        }
+        return {
+          tensor: new ort.Tensor("float32", input, [1, 3, detectionInputSize, detectionInputSize]),
+          scale,
+          padX,
+          padY
+        };
+      }
+
       function softmax(values) {
         const maxValue = Math.max(...values);
         const exponentials = values.map((value) => Math.exp(value - maxValue));
@@ -875,13 +972,50 @@
         return alreadyNormalized ? values : softmax(values);
       }
 
+      function overlapArea(a, b) {
+        const left = Math.max(a.x1, b.x1);
+        const top = Math.max(a.y1, b.y1);
+        const right = Math.min(a.x2, b.x2);
+        const bottom = Math.min(a.y2, b.y2);
+        return Math.max(0, right - left) * Math.max(0, bottom - top);
+      }
+
+      function boxArea(box) {
+        return Math.max(0, box.x2 - box.x1) * Math.max(0, box.y2 - box.y1);
+      }
+
+      function iou(a, b) {
+        const intersection = overlapArea(a, b);
+        const union = boxArea(a) + boxArea(b) - intersection;
+        return union <= 0 ? 0 : intersection / union;
+      }
+
+      function nonMaxSuppression(boxes) {
+        const selected = [];
+        const sorted = [...boxes].sort((a, b) => b.score - a.score);
+        while (sorted.length && selected.length < 24) {
+          const current = sorted.shift();
+          selected.push(current);
+          for (let index = sorted.length - 1; index >= 0; index -= 1) {
+            if (iou(current, sorted[index]) > detectionIouThreshold) {
+              sorted.splice(index, 1);
+            }
+          }
+        }
+        return selected;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
       async function predictWithYolo(image) {
-        if (!yoloSession) {
+        if (!classifierSession) {
           return [];
         }
-        const inputName = yoloSession.inputNames[0];
-        const outputName = yoloSession.outputNames[0];
-        const output = await yoloSession.run({ [inputName]: preprocessImage(image) });
+        const inputName = classifierSession.inputNames[0];
+        const outputName = classifierSession.outputNames[0];
+        const output = await classifierSession.run({ [inputName]: preprocessClassifierImage(image) });
         const rawScores = Array.from(output[outputName].data);
         const probabilities = toProbabilities(rawScores);
         return probabilities
@@ -890,6 +1024,48 @@
             score
           }))
           .sort((a, b) => b.score - a.score);
+      }
+
+      async function detectWithYolo(image) {
+        if (!detectionSession) {
+          return [];
+        }
+        const { tensor, scale, padX, padY } = preprocessDetectionImage(image);
+        const inputName = detectionSession.inputNames[0];
+        const outputName = detectionSession.outputNames[0];
+        const output = await detectionSession.run({ [inputName]: tensor });
+        const tensorOutput = output[outputName];
+        const data = tensorOutput.data;
+        const dimensions = tensorOutput.dims;
+        const rows = dimensions[2];
+        const boxes = [];
+        for (let index = 0; index < rows; index += 1) {
+          const cx = data[index];
+          const cy = data[rows + index];
+          const width = data[rows * 2 + index];
+          const height = data[rows * 3 + index];
+          const score = data[rows * 4 + index];
+          if (score < detectionConfidenceThreshold || width <= 1 || height <= 1) {
+            continue;
+          }
+          const x1 = clamp((cx - width / 2 - padX) / scale, 0, image.naturalWidth);
+          const y1 = clamp((cy - height / 2 - padY) / scale, 0, image.naturalHeight);
+          const x2 = clamp((cx + width / 2 - padX) / scale, 0, image.naturalWidth);
+          const y2 = clamp((cy + height / 2 - padY) / scale, 0, image.naturalHeight);
+          if (x2 - x1 < 4 || y2 - y1 < 4) {
+            continue;
+          }
+          boxes.push({
+            label: "trash_object",
+            title: "YOLO 检测框",
+            score,
+            x1,
+            y1,
+            x2,
+            y2
+          });
+        }
+        return nonMaxSuppression(boxes);
       }
 
       function normalizePredictions(predictions) {
@@ -902,7 +1078,52 @@
         }));
       }
 
-      function renderPrediction(predictions) {
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function getImageDisplayRect(image) {
+        const shellRect = detectionLayer.getBoundingClientRect();
+        const scale = Math.max(shellRect.width / image.naturalWidth, shellRect.height / image.naturalHeight);
+        const width = image.naturalWidth * scale;
+        const height = image.naturalHeight * scale;
+        return {
+          left: (shellRect.width - width) / 2,
+          top: (shellRect.height - height) / 2,
+          scale
+        };
+      }
+
+      function renderDetections(image, detections) {
+        lastDetections = detections;
+        boxCount.textContent = `${detections.length} 个`;
+        if (currentMode === "raw") {
+          detectionLayer.innerHTML = "";
+          return;
+        }
+        const display = getImageDisplayRect(image);
+        detectionLayer.innerHTML = detections.map((box) => {
+          const left = display.left + box.x1 * display.scale;
+          const top = display.top + box.y1 * display.scale;
+          const width = (box.x2 - box.x1) * display.scale;
+          const height = (box.y2 - box.y1) * display.scale;
+          const label = `${box.title} ${Math.round(box.score * 100)}%`;
+          return `
+            <div
+              class="detection-box${box.score < 0.3 ? " low" : ""}"
+              data-label="${escapeHtml(label)}"
+              style="left:${left}px;top:${top}px;width:${width}px;height:${height}px"
+            ></div>
+          `;
+        }).join("");
+      }
+
+      function renderPrediction(predictions, detections, timing) {
         if (!predictions.length) {
           analysisOverlay.innerHTML = "<b>正在准备识别</b><span>现场事件识别正在加载，请稍后再试。</span>";
           eventCount.textContent = "准备中";
@@ -914,10 +1135,25 @@
         const top = normalized[0];
         const event = eventCatalog[top.event];
         const confidence = `${Math.round(top.score * 100)}%`;
-        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>${event.action}</span>`;
-        eventCount.textContent = `${normalized.length} 项`;
+        const detectSummary = `${detections.length} 个 YOLO 框 / ${Math.round(timing.total)} ms`;
+        inferenceTime.textContent = `${Math.round(timing.total)} ms`;
+        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>YOLO detection：${detectSummary}</span><span>${event.action}</span>`;
+        eventCount.textContent = `${detections.length} 框`;
         workOrderText.textContent = workOrderCopy[top.event];
-        results.innerHTML = normalized.slice(0, 3).map((item) => {
+        const detectionCard = `
+          <article class="object-card">
+            <div class="object-top">
+              <div class="object-name">
+                <b>YOLO 检测框</b>
+                <span>trash_object detection · ${detections.length} 个框</span>
+              </div>
+              <div class="confidence">${Math.round(timing.detect)} ms</div>
+            </div>
+            <div class="reason">前端加载 trash-object-yolo11n-det-expanded.onnx 后在浏览器本地执行 ONNX 推理，检测框为模型输出后经 NMS 过滤的结果。</div>
+            <div class="action-note">分类耗时 ${Math.round(timing.classify)} ms，检测耗时 ${Math.round(timing.detect)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
+          </article>
+        `;
+        results.innerHTML = detectionCard + normalized.slice(0, 3).map((item) => {
           const detail = eventCatalog[item.event];
           return `
             <article class="object-card">
@@ -946,7 +1182,20 @@
         if (!modelReady) {
           await modelReadyPromise;
         }
-        return predictWithYolo(image);
+        const start = performance.now();
+        const predictions = await predictWithYolo(image);
+        const classifiedAt = performance.now();
+        const detections = await detectWithYolo(image);
+        const detectedAt = performance.now();
+        return {
+          predictions,
+          detections,
+          timing: {
+            classify: classifiedAt - start,
+            detect: detectedAt - classifiedAt,
+            total: detectedAt - start
+          }
+        };
       }
 
       async function recognizeCurrentImage() {
@@ -956,7 +1205,9 @@
         try {
           const image = await loadImage(currentImage.url);
           imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
-          renderPrediction(await recognizeImageElement(image));
+          const result = await recognizeImageElement(image);
+          renderDetections(sceneImage.naturalWidth ? sceneImage : image, result.detections);
+          renderPrediction(result.predictions, result.detections, result.timing);
         } catch (error) {
           setErrorState(error.message || "现场画面无法识别。");
         }
@@ -981,6 +1232,9 @@
       setActiveSample(0);
       sceneImage.addEventListener("load", () => {
         imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+        if (currentMode === "result" && lastDetections.length) {
+          renderDetections(sceneImage, lastDetections);
+        }
       });
       if (sceneImage.complete) {
         imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
@@ -998,7 +1252,9 @@
         sceneImage.onload = async () => {
           imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
           try {
-            renderPrediction(await recognizeImageElement(sceneImage));
+            const result = await recognizeImageElement(sceneImage);
+            renderDetections(sceneImage, result.detections);
+            renderPrediction(result.predictions, result.detections, result.timing);
           } catch (error) {
             setErrorState(error.message || "现场截图无法识别。");
           }
@@ -1027,9 +1283,15 @@
         modelStatus.textContent = "加载失败";
         setErrorState(error.message || "模型资源无法读取。");
       });
+      window.addEventListener("resize", () => {
+        if (currentMode === "result" && lastDetections.length) {
+          renderDetections(sceneImage, lastDetections);
+        }
+      });
       window.wasteVisionDemo = {
         recognizeCurrentImage,
         getLastPredictions: () => lastPredictions,
+        getLastDetections: () => lastDetections,
         isModelReady: () => modelReady
       };
     </script>
