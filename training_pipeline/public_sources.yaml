@@ -1,0 +1,37 @@
+datasets:
+  roboflow_overflow:
+    name: Roboflow garbage can overflow
+    url: https://universe.roboflow.com/mariswary-deepak-4ajr0/garbage-can-overflow
+    version: 4
+    format: yolov8
+    status: requires ROBOFLOW_API_KEY or manual export
+    use: scene classification supplement for overflow and normal
+    class_mapping:
+      overflow:
+        - full
+        - close_full
+        - open_full
+        - trash flow
+      normal:
+        - empty
+        - close_empty
+        - open_empty
+        - healthy trash can
+        - closed
+  taco:
+    name: TACO Trash Annotations in Context
+    annotations_url: https://raw.githubusercontent.com/pedropro/TACO/master/data/annotations.json
+    url: https://github.com/pedropro/TACO
+    status: direct annotation/image URL download
+    use: trash_object detection supplement for loose litter
+  mendeley_trash_detection:
+    name: Mendeley Trash Detection Dataset
+    url: https://data.mendeley.com/datasets/z732f9pwxt/1
+    status: direct file URL unresolved from static page
+    use: trash_object detection supplement when downloadable archive URL is available
+  innovatiana_garbage_detection:
+    name: Innovatiana Garbage Detection Dataset
+    kaggle_slug: viswaprakash1990/garbage-detection
+    url: https://www.kaggle.com/datasets/viswaprakash1990/garbage-detection
+    status: Kaggle download if credentials are present
+    use: trash_object detection supplement for waste-material boxes

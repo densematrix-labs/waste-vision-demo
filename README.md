@@ -39,6 +39,34 @@ docker run --rm -v "$PWD:/workspace" -w /workspace python:3.11-slim bash -lc 'ap
 
 如果需要正式交付“检测框/分割框”的模型，需要补充框选或分割标注，并重新划分训练集、验证集和留出测试集后训练 YOLO detection/segmentation 模型。
 
+## 公开数据补充训练
+
+已新增公开数据融合与 YOLO detection baseline，用于补充“散落垃圾物体检测”能力，不直接替代客户 RB 图训练出来的场景分类模型。
+
+已并入的数据：
+
+- TACO：抽取 80 张，统一映射为 `trash_object`
+- Innovatiana Garbage Detection：通过 Kaggle 下载，抽取 120 张，统一映射为 `trash_object`
+
+训练产物：
+
+```bash
+models/public-detection/trash-object-yolo11n-det.pt
+models/public-detection/trash-object-yolo11n-det.onnx
+models/public-detection/trash-object-yolo11n-det-metrics.json
+models/public-detection/trash-object-yolo11n-det-results.csv
+```
+
+当前 baseline 使用 160 张训练图、40 张验证图，30 epoch 后验证结果为 Precision 0.548、Recall 0.414、mAP50 0.407、mAP50-95 0.238。该模型可以作为散落垃圾检测补充资产；由于 Roboflow overflow 数据尚未导出，它还不能可靠承担“满/空/溢出”的场景状态判断。
+
+公开数据训练脚本和 source manifest 在：
+
+```bash
+training_pipeline/
+```
+
+Roboflow overflow 数据需要 `ROBOFLOW_API_KEY` 或手动导出；Mendeley 数据源页面未在当前环境暴露稳定下载直链，先作为候选源保留。
+
 ## 现场画面
 
 页面使用 4 张代表性固定点位画面：

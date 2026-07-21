@@ -1,0 +1,28 @@
+{
+  "dataset": "public_yolo_detection_supplement",
+  "classes": [
+    "trash_object"
+  ],
+  "counts": {
+    "train": 160,
+    "val": 40
+  },
+  "sources": [
+    {
+      "source": "taco",
+      "attempted": 80,
+      "added": 80,
+      "status": "ok"
+    },
+    {
+      "source": "innovatiana",
+      "available_pairs": 10464,
+      "added": 120,
+      "status": "ok"
+    }
+  ],
+  "blocked": {
+    "roboflow_overflow": "ROBOFLOW_API_KEY is not present; export URL requires key or manual download.",
+    "mendeley_trash_detection": "Static page does not expose stable direct file URL in this environment; keep as source candidate."
+  }
+}
