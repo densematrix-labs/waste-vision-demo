@@ -659,7 +659,7 @@
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <p class="footnote">当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。</p>
+            <p class="footnote" id="workOrderText">当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。</p>
           </div>
         </section>
       </main>
@@ -673,6 +673,7 @@
       const analysisOverlay = document.getElementById("analysisOverlay");
       const eventCount = document.getElementById("eventCount");
       const results = document.getElementById("results");
+      const workOrderText = document.getElementById("workOrderText");
       const showRaw = document.getElementById("showRaw");
       const showResult = document.getElementById("showResult");
       const rawButton = document.getElementById("rawButton");
@@ -706,6 +707,13 @@
           reason: "画面中未发现明显满溢、散落或脏污特征，适合作为例行巡检状态记录。",
           action: "建议保持常规巡检频次，结合桶内高度和清运计划持续观察。"
         }
+      };
+
+      const workOrderCopy = {
+        overflow: "当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。",
+        litter: "当前点位建议进入“保洁复核”流程。系统可结合点位时段、投放记录和现场画面确认是否需要即时清理。",
+        dirty: "当前点位建议进入“地面清洁复核”流程。系统可结合天气、清扫记录和现场画面判断是否生成保洁工单。",
+        normal: "当前点位未发现明显异常，建议保持常规巡检频次。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
       const customerSamples = [
@@ -931,6 +939,7 @@
         const confidence = `${Math.round(top.score * 100)}%`;
         analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>${event.action}</span>`;
         eventCount.textContent = `${predictions.length} 项`;
+        workOrderText.textContent = workOrderCopy[top.event];
         results.innerHTML = predictions.slice(0, 3).map((item) => {
           const detail = eventCatalog[item.event];
           return `
@@ -1022,7 +1031,7 @@
         currentImage = {
           url,
           title: "现场截图",
-          caption: "系统已完成现场截图识别，右侧为异常事件判断和处置建议。",
+          caption: "系统已完成现场截图识别，右侧为现场状态判断和处置建议。",
           sampleIndex: null
         };
         sceneImage.src = url;
