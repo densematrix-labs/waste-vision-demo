@@ -264,6 +264,42 @@
         color: var(--muted);
       }
 
+      .sample-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .sample-button {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(20, 34, 31, 0.72);
+        color: var(--text);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .sample-button:hover,
+      .sample-button.active {
+        border-color: var(--cyan);
+        background: rgba(110, 231, 216, 0.12);
+      }
+
+      .sample-button span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .sample-button b {
+        font-size: 12px;
+        color: var(--cyan);
+      }
+
       .swatch {
         width: 12px;
         height: 12px;
@@ -493,6 +529,11 @@
             </div>
 
             <div class="control-group">
+              <label>客户数据样例</label>
+              <div class="sample-list" id="sampleList"></div>
+            </div>
+
+            <div class="control-group">
               <label>状态识别结果</label>
               <div class="legend">
                 <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>检测区域：只复核客户配置范围</span></div>
@@ -503,7 +544,7 @@
               </div>
             </div>
 
-            <p class="footnote">当前样例使用公开固定点位画面作为输入。页面展示巡检模型样例输出，上传客户现场截图时不展示未验证结果。</p>
+            <p class="footnote">默认样例使用公开固定点位画面作为输入；客户数据样例来自 RB 6-7 月训练图集。上传客户现场截图时不展示未验证结果。</p>
           </div>
         </section>
 
@@ -571,7 +612,7 @@
           </div>
           <div class="panel-body">
             <p class="footnote">当前点位建议进入“清运复核”流程。客户现场接入后，系统可结合摄像头画面、桶内高度、开盖记录、清运计划和用户投放记录生成闭环工单。</p>
-            <p class="footnote">画面来源：<a class="source-link" href="https://pantausemar.semarangkota.go.id/analitik/23a98c3d-401f-476c-8766-b23e4c4babab" target="_blank" rel="noreferrer">公开固定点位页面</a></p>
+            <p class="footnote">默认画面来源：<a class="source-link" href="https://pantausemar.semarangkota.go.id/analitik/23a98c3d-401f-476c-8766-b23e4c4babab" target="_blank" rel="noreferrer">公开固定点位页面</a>；客户样例来源：RB 6-7 月训练图集。</p>
           </div>
         </section>
       </main>
@@ -587,6 +628,34 @@
       const rawButton = document.getElementById("rawButton");
       const resultButton = document.getElementById("resultButton");
       const fileInput = document.getElementById("fileInput");
+      const sampleList = document.getElementById("sampleList");
+
+      const customerSamples = [
+        {
+          title: "满溢/堆积",
+          status: "客户样例：满溢/堆积",
+          image: "./customer-scenes/pileup-bin-area.jpg",
+          caption: "客户现场训练图集样例：桶旁堆积和外露垃圾集中在投放点附近，适合用于清运复核与满溢风险压测。"
+        },
+        {
+          title: "小包落地",
+          status: "客户样例：小包落地",
+          image: "./customer-scenes/ground-litter-zone.jpg",
+          caption: "客户现场训练图集样例：地面警戒区内出现袋装/零散垃圾，可用于测试远景小目标、遮挡和区域外干扰。"
+        },
+        {
+          title: "地面脏污",
+          status: "客户样例：地面脏污",
+          image: "./customer-scenes/dirty-water-zone.jpg",
+          caption: "客户现场训练图集样例：地面存在积水、反光和脏污边界，适合用于脏污事件复核和误报压测。"
+        },
+        {
+          title: "箱盖阻挡",
+          status: "客户样例：箱盖阻挡",
+          image: "./customer-scenes/bin-lid-blocked.jpg",
+          caption: "客户现场训练图集样例：大袋垃圾压在投放口附近，适合展示箱盖/投放口阻挡和处置派单场景。"
+        }
+      ];
 
       function setMode(mode) {
         const isRaw = mode === "raw";
@@ -598,8 +667,38 @@
         stageStatus.textContent = isRaw ? "原始固定机位截图" : "状态识别结果";
         showRaw.classList.toggle("active", isRaw);
         showResult.classList.toggle("active", !isRaw);
+        setActiveSample();
         imageSize.textContent = "1920 × 1080";
       }
+
+      function setActiveSample(index) {
+        [...sampleList.querySelectorAll("button")].forEach((button, buttonIndex) => {
+          button.classList.toggle("active", buttonIndex === index);
+        });
+      }
+
+      function showCustomerSample(index) {
+        const sample = customerSamples[index];
+        sceneImage.onload = () => {
+          imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+        };
+        sceneImage.src = sample.image;
+        sceneImage.alt = sample.status;
+        caption.textContent = sample.caption;
+        stageStatus.textContent = sample.status;
+        showRaw.classList.remove("active");
+        showResult.classList.remove("active");
+        setActiveSample(index);
+      }
+
+      customerSamples.forEach((sample, index) => {
+        const button = document.createElement("button");
+        button.className = "sample-button";
+        button.type = "button";
+        button.innerHTML = `<span>${sample.title}</span><b>查看</b>`;
+        button.addEventListener("click", () => showCustomerSample(index));
+        sampleList.appendChild(button);
+      });
 
       showRaw.addEventListener("click", () => setMode("raw"));
       rawButton.addEventListener("click", () => setMode("raw"));
@@ -619,6 +718,7 @@
         stageStatus.textContent = "客户现场输入截图";
         showRaw.classList.remove("active");
         showResult.classList.remove("active");
+        setActiveSample();
       });
     </script>
   </body>

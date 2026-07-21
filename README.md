@@ -8,6 +8,7 @@
 - 使用巡检模型演示输出生成状态识别结果图
 - 展示桶内高度、开盖记录、清运计划等现场信号接入项
 - 展示满溢风险、周边散落、地面脏污和工单建议
+- 增加客户现场训练图集样例，可切换查看满溢/堆积、小包落地、地面脏污、箱盖阻挡等场景
 
 公开演示地址：
 
@@ -47,6 +48,15 @@ python3 train_model/scripts/train_lightweight_status_model.py
 ```
 
 当前演示模型使用 100 张真实标注样例训练，用于跑通真实训练与推理流程。客户页统一使用“巡检模型演示输出/样例输出”口径，客户点位数据到位后，可按同一链路替换为客户现场数据训练。
+
+## 客户样例
+
+页面已加入 RB 6-7 月训练图集中的 4 张代表性现场图：
+
+- `customer-scenes/pileup-bin-area.jpg`：满溢/堆积
+- `customer-scenes/ground-litter-zone.jpg`：小包落地
+- `customer-scenes/dirty-water-zone.jpg`：地面脏污
+- `customer-scenes/bin-lid-blocked.jpg`：箱盖阻挡
 
 ## 治理事件测试集
 
