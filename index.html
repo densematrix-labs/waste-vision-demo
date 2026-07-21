@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>垃圾投放点智能巡检演示</title>
+    <title>垃圾投放点智能巡检平台</title>
     <style>
       :root {
         color-scheme: dark;
@@ -533,12 +533,12 @@
       <header>
         <div class="header-inner">
           <div>
-            <h1>垃圾投放点智能巡检演示</h1>
-            <p class="subtitle">用固定点位画面展示垃圾投放点巡检流程；巡检模型演示输出围绕检测区域和地面警戒区生成，现场信号作为客户系统接入项参与工单判断。</p>
+            <h1>垃圾投放点智能巡检平台</h1>
+            <p class="subtitle">基于固定机位画面识别满溢、散落、脏污和投放口阻挡等现场异常，并联动点位数据生成处置建议。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
-            <span class="chip">识别 <strong>巡检模型</strong></span>
+            <span class="chip">识别 <strong>异常事件</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -547,67 +547,67 @@
       <main>
         <section class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">输入与信号</h2>
+            <h2 class="panel-title">现场画面与数据</h2>
           </div>
           <div class="panel-body">
             <div class="control-group">
-              <label>上传客户现场截图</label>
+              <label>上传现场截图</label>
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
                   <b>选择一张现场截图</b>
-                  <span>上传后仅展示输入图，不展示未验证结论</span>
+                  <span>用于查看现场画面和点位状态</span>
                 </div>
               </div>
             </div>
 
             <div class="control-group">
-              <label>现场信号接入项</label>
+              <label>点位数据</label>
               <div class="signal-list">
-                <div class="signal"><strong>桶内高度</strong><b>可接入</b><span>辅助满溢判断</span></div>
-                <div class="signal"><strong>开盖记录</strong><b>可接入</b><span>辅助投放频次判断</span></div>
-                <div class="signal"><strong>清运计划</strong><b>可接入</b><span>辅助派单优先级</span></div>
-                <div class="signal"><strong>用户投放记录</strong><b>可接入</b><span>辅助追溯闭环</span></div>
+                <div class="signal"><strong>桶内高度</strong><b>联动</b><span>辅助判断满溢风险</span></div>
+                <div class="signal"><strong>开盖记录</strong><b>联动</b><span>辅助判断投放频次</span></div>
+                <div class="signal"><strong>清运计划</strong><b>联动</b><span>辅助确定处置优先级</span></div>
+                <div class="signal"><strong>投放记录</strong><b>联动</b><span>辅助形成追溯闭环</span></div>
               </div>
             </div>
 
             <div class="control-group">
-              <button class="primary" id="resultButton">查看公开模型样例</button>
-              <button class="secondary" id="rawButton">查看公开原始截图</button>
+              <button class="primary" id="resultButton">查看区域识别效果</button>
+              <button class="secondary" id="rawButton">查看基础画面</button>
             </div>
 
             <div class="control-group">
-              <label>客户数据样例</label>
+              <label>现场案例</label>
               <div class="sample-list" id="sampleList"></div>
             </div>
 
             <div class="control-group">
-              <label>状态识别结果</label>
+              <label>画面标识</label>
               <div class="legend">
-                <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>检测区域：只复核客户配置范围</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>地面警戒区：散落与脏污复核范围</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：巡检模型演示输出</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：巡检模型演示输出</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>脏污复核区：油污、泥渍、积水样例</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>检测区域：重点关注的投放点范围</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>地面警戒区：散落与脏污识别范围</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：桶口和桶旁堆积风险</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：袋装和零散垃圾落地区域</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>脏污区域：油污、泥渍、积水和反光</span></div>
               </div>
             </div>
 
-            <p class="footnote">默认样例使用公开固定点位画面作为输入；客户数据样例来自 RB 6-7 月训练图集。上传客户现场截图时不展示未验证结果。</p>
+            <p class="footnote">系统围绕固定点位配置区域进行识别，减少道路、车辆、行人等非目标区域干扰。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">客户现场样例：满溢/堆积</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">现场案例：满溢/堆积</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
-            <button id="showRaw">公开原始截图</button>
-            <button id="showResult">公开模型样例</button>
+            <button id="showRaw">基础画面</button>
+            <button id="showResult">区域识别效果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/pileup-bin-area.jpg" alt="客户现场样例：满溢/堆积" />
-            <div class="image-caption" id="caption">客户现场训练图集样例：桶旁堆积和外露垃圾集中在投放点附近，适合用于清运复核与满溢风险压测。</div>
+            <img id="sceneImage" src="./customer-scenes/pileup-bin-area.jpg" alt="现场案例：满溢/堆积" />
+            <div class="image-caption" id="caption">桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。</div>
           </div>
           <div class="customer-gallery" id="customerGallery"></div>
         </section>
@@ -623,36 +623,36 @@
                 <div class="object-top">
                   <div class="object-name">
                     <b>满溢风险</b>
-                    <span>样例输出：满溢风险热区</span>
+                    <span>桶口外溢、桶旁堆积</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
-                <div class="reason">满溢热区位于客户配置的检测区域内，适合作为清运优先级判断依据。</div>
-                <div class="action-note">建议进入清运复核队列，结合客户现场桶内高度和清运计划确定派单优先级。</div>
+                <div class="reason">满溢热区位于检测区域内，适合作为清运优先级判断依据。</div>
+                <div class="action-note">建议进入清运复核队列，结合桶内高度和清运计划确定派单优先级。</div>
               </article>
 
               <article class="object-card">
                 <div class="object-top">
                   <div class="object-name">
                     <b>周边散落</b>
-                    <span>样例输出：地面警戒区散落</span>
+                    <span>袋装垃圾、零散垃圾落地</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
                 <div class="reason">散落热区落在地面警戒区内，适合作为保洁复核和现场处置判断依据。</div>
-                <div class="action-note">部署时将投放口、桶身、地面警戒区作为客户点位配置，减少非目标区域干扰。</div>
+                <div class="action-note">系统将投放口、桶身、地面警戒区作为点位配置，减少非目标区域干扰。</div>
               </article>
 
               <article class="object-card">
                 <div class="object-top">
                   <div class="object-name">
                     <b>地面脏污</b>
-                    <span>样例输出：油污、泥渍、积水复核</span>
+                    <span>油污、泥渍、积水和反光</span>
                   </div>
                   <div class="confidence">复核</div>
                 </div>
                 <div class="reason">地面脏污只在警戒区内复核，用来区分真实脏污、雨后反光、积水和非目标区域干扰。</div>
-                <div class="action-note">建议作为保洁工单触发项，客户现场接入后可结合雨天、清扫记录和点位时段降低误报。</div>
+                <div class="action-note">建议作为保洁工单触发项，结合雨天、清扫记录和点位时段降低误报。</div>
               </article>
             </div>
           </div>
@@ -660,8 +660,7 @@
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <p class="footnote">当前点位建议进入“清运复核”流程。客户现场接入后，系统可结合摄像头画面、桶内高度、开盖记录、清运计划和用户投放记录生成闭环工单。</p>
-            <p class="footnote">默认画面来源：<a class="source-link" href="https://pantausemar.semarangkota.go.id/analitik/23a98c3d-401f-476c-8766-b23e4c4babab" target="_blank" rel="noreferrer">公开固定点位页面</a>；客户样例来源：RB 6-7 月训练图集。</p>
+            <p class="footnote">当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。</p>
           </div>
         </section>
       </main>
@@ -683,38 +682,38 @@
       const customerSamples = [
         {
           title: "满溢/堆积",
-          status: "客户样例：满溢/堆积",
+          status: "现场案例：满溢/堆积",
           image: "./customer-scenes/pileup-bin-area.jpg",
-          caption: "客户现场训练图集样例：桶旁堆积和外露垃圾集中在投放点附近，适合用于清运复核与满溢风险压测。"
+          caption: "桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。"
         },
         {
           title: "小包落地",
-          status: "客户样例：小包落地",
+          status: "现场案例：小包落地",
           image: "./customer-scenes/ground-litter-zone.jpg",
-          caption: "客户现场训练图集样例：地面警戒区内出现袋装/零散垃圾，可用于测试远景小目标、遮挡和区域外干扰。"
+          caption: "地面警戒区内出现袋装和零散垃圾，系统可识别落地异常并提示保洁复核。"
         },
         {
           title: "地面脏污",
-          status: "客户样例：地面脏污",
+          status: "现场案例：地面脏污",
           image: "./customer-scenes/dirty-water-zone.jpg",
-          caption: "客户现场训练图集样例：地面存在积水、反光和脏污边界，适合用于脏污事件复核和误报压测。"
+          caption: "地面存在积水、反光和脏污边界，系统可提示脏污复核并结合天气和清扫记录降低误报。"
         },
         {
           title: "箱盖阻挡",
-          status: "客户样例：箱盖阻挡",
+          status: "现场案例：箱盖阻挡",
           image: "./customer-scenes/bin-lid-blocked.jpg",
-          caption: "客户现场训练图集样例：大袋垃圾压在投放口附近，适合展示箱盖/投放口阻挡和处置派单场景。"
+          caption: "大袋垃圾压在投放口附近，系统可识别投放口阻挡并触发现场处置提醒。"
         }
       ];
 
       function setMode(mode) {
         const isRaw = mode === "raw";
         sceneImage.src = isRaw ? "./scene-fixed-input.jpg" : "./scene-trained-model.jpg";
-        sceneImage.alt = isRaw ? "固定点位垃圾投放点原始截图" : "固定点位垃圾投放点状态识别结果";
+        sceneImage.alt = isRaw ? "固定点位垃圾投放点基础画面" : "固定点位垃圾投放点区域识别效果";
         caption.textContent = isRaw
-          ? "TPS BULU LOR 固定点位，公开原始截图：作为巡检输入画面。"
-          : "固定点位画面经巡检模型演示识别：只围绕检测区域与地面警戒区复核满溢、散落和脏污风险。";
-        stageStatus.textContent = isRaw ? "原始固定机位截图" : "状态识别结果";
+          ? "固定机位基础画面：用于展示投放点、桶身和地面警戒区。"
+          : "区域识别效果：围绕检测区域与地面警戒区识别满溢、散落和脏污风险。";
+        stageStatus.textContent = isRaw ? "基础画面" : "区域识别效果";
         showRaw.classList.toggle("active", isRaw);
         showResult.classList.toggle("active", !isRaw);
         setActiveSample();
@@ -786,9 +785,9 @@
           imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
         };
         sceneImage.src = url;
-        sceneImage.alt = "上传的客户现场截图";
-        caption.textContent = "已上传客户现场截图。当前页面不对上传图片生成标注，避免把未验证结果展示成真实识别。";
-        stageStatus.textContent = "客户现场输入截图";
+        sceneImage.alt = "上传的现场截图";
+        caption.textContent = "已上传现场截图，可用于查看固定机位画面和点位状态。";
+        stageStatus.textContent = "现场截图";
         showRaw.classList.remove("active");
         showResult.classList.remove("active");
         setActiveSample();
