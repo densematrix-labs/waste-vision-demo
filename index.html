@@ -405,6 +405,36 @@
         line-height: 1.5;
       }
 
+      .analysis-overlay {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        width: min(300px, calc(100% - 24px));
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(5, 9, 8, 0.82);
+        border: 1px solid rgba(184, 242, 93, 0.45);
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+      }
+
+      .analysis-overlay.hidden {
+        display: none;
+      }
+
+      .analysis-overlay b {
+        display: block;
+        color: var(--lime);
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+
+      .analysis-overlay span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
       .customer-gallery {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -607,6 +637,10 @@
           </div>
           <div class="image-shell">
             <img id="sceneImage" src="./customer-scenes/pileup-bin-area.jpg" alt="现场案例：满溢/堆积" />
+            <div class="analysis-overlay" id="analysisOverlay">
+              <b>识别中</b>
+              <span>正在读取现场画面并判断异常事件。</span>
+            </div>
             <div class="image-caption" id="caption">桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。</div>
           </div>
           <div class="customer-gallery" id="customerGallery"></div>
@@ -615,46 +649,10 @@
         <section class="panel right">
           <div class="panel-header">
             <h2 class="panel-title">事件判断</h2>
-            <span class="chip"><strong>3</strong> 项</span>
+            <span class="chip"><strong id="eventCount">识别中</strong></span>
           </div>
           <div class="panel-body">
-            <div class="results">
-              <article class="object-card">
-                <div class="object-top">
-                  <div class="object-name">
-                    <b>满溢风险</b>
-                    <span>桶口外溢、桶旁堆积</span>
-                  </div>
-                  <div class="confidence">复核</div>
-                </div>
-                <div class="reason">满溢热区位于检测区域内，适合作为清运优先级判断依据。</div>
-                <div class="action-note">建议进入清运复核队列，结合桶内高度和清运计划确定派单优先级。</div>
-              </article>
-
-              <article class="object-card">
-                <div class="object-top">
-                  <div class="object-name">
-                    <b>周边散落</b>
-                    <span>袋装垃圾、零散垃圾落地</span>
-                  </div>
-                  <div class="confidence">复核</div>
-                </div>
-                <div class="reason">散落热区落在地面警戒区内，适合作为保洁复核和现场处置判断依据。</div>
-                <div class="action-note">系统将投放口、桶身、地面警戒区作为点位配置，减少非目标区域干扰。</div>
-              </article>
-
-              <article class="object-card">
-                <div class="object-top">
-                  <div class="object-name">
-                    <b>地面脏污</b>
-                    <span>油污、泥渍、积水和反光</span>
-                  </div>
-                  <div class="confidence">复核</div>
-                </div>
-                <div class="reason">地面脏污只在警戒区内复核，用来区分真实脏污、雨后反光、积水和非目标区域干扰。</div>
-                <div class="action-note">建议作为保洁工单触发项，结合雨天、清扫记录和点位时段降低误报。</div>
-              </article>
-            </div>
+            <div class="results" id="results"></div>
           </div>
           <div class="panel-header">
             <h2 class="panel-title">工单建议</h2>
@@ -671,6 +669,9 @@
       const caption = document.getElementById("caption");
       const stageStatus = document.getElementById("stageStatus");
       const imageSize = document.getElementById("imageSize");
+      const analysisOverlay = document.getElementById("analysisOverlay");
+      const eventCount = document.getElementById("eventCount");
+      const results = document.getElementById("results");
       const showRaw = document.getElementById("showRaw");
       const showResult = document.getElementById("showResult");
       const rawButton = document.getElementById("rawButton");
@@ -679,46 +680,103 @@
       const sampleList = document.getElementById("sampleList");
       const customerGallery = document.getElementById("customerGallery");
 
+      const eventCatalog = {
+        overflow: {
+          title: "满溢风险",
+          detail: "桶口外溢、桶旁堆积",
+          reason: "画面特征接近满溢和桶旁堆积场景，适合作为清运优先级判断依据。",
+          action: "建议进入清运复核队列，结合桶内高度和清运计划确定派单优先级。"
+        },
+        litter: {
+          title: "周边散落",
+          detail: "袋装垃圾、零散垃圾落地",
+          reason: "地面警戒区内存在明显落地物，适合作为保洁复核和现场处置判断依据。",
+          action: "建议进入保洁复核队列，结合点位时段和投放记录确认处置方式。"
+        },
+        dirty: {
+          title: "地面脏污",
+          detail: "油污、泥渍、积水和反光",
+          reason: "地面纹理和亮度变化接近脏污、积水或反光场景，需要结合天气和清扫记录复核。",
+          action: "建议作为保洁工单触发项，结合雨天、清扫记录和点位时段降低误报。"
+        },
+        blocked: {
+          title: "投放口阻挡",
+          detail: "大袋垃圾、箱盖阻挡",
+          reason: "投放口附近存在遮挡或压盖风险，可能影响正常投放和箱体使用。",
+          action: "建议提示现场处置，优先确认投放口是否可正常开启。"
+        }
+      };
+
       const customerSamples = [
         {
           title: "满溢/堆积",
+          event: "overflow",
           status: "现场案例：满溢/堆积",
           image: "./customer-scenes/pileup-bin-area.jpg",
           caption: "桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。"
         },
         {
           title: "小包落地",
+          event: "litter",
           status: "现场案例：小包落地",
           image: "./customer-scenes/ground-litter-zone.jpg",
           caption: "地面警戒区内出现袋装和零散垃圾，系统可识别落地异常并提示保洁复核。"
         },
         {
           title: "地面脏污",
+          event: "dirty",
           status: "现场案例：地面脏污",
           image: "./customer-scenes/dirty-water-zone.jpg",
           caption: "地面存在积水、反光和脏污边界，系统可提示脏污复核并结合天气和清扫记录降低误报。"
         },
         {
           title: "箱盖阻挡",
+          event: "blocked",
           status: "现场案例：箱盖阻挡",
           image: "./customer-scenes/bin-lid-blocked.jpg",
           caption: "大袋垃圾压在投放口附近，系统可识别投放口阻挡并触发现场处置提醒。"
         }
       ];
 
+      const trainingSamples = [
+        ["overflow", "./training-scenes/overflow/overflow-01.jpg"],
+        ["overflow", "./training-scenes/overflow/overflow-02.jpg"],
+        ["overflow", "./training-scenes/overflow/overflow-03.jpg"],
+        ["litter", "./training-scenes/litter/litter-01.jpg"],
+        ["litter", "./training-scenes/litter/litter-02.jpg"],
+        ["litter", "./training-scenes/litter/litter-03.jpg"],
+        ["dirty", "./training-scenes/dirty/dirty-01.jpg"],
+        ["dirty", "./training-scenes/dirty/dirty-02.jpg"],
+        ["dirty", "./training-scenes/dirty/dirty-03.jpg"],
+        ["blocked", "./training-scenes/blocked/blocked-01.jpg"],
+        ["blocked", "./training-scenes/blocked/blocked-02.jpg"],
+        ["blocked", "./training-scenes/blocked/blocked-03.jpg"]
+      ];
+
+      let currentMode = "result";
+      let currentImage = {
+        url: customerSamples[0].image,
+        title: customerSamples[0].status,
+        caption: customerSamples[0].caption,
+        sampleIndex: 0
+      };
+      let model = [];
+      let modelReady = false;
+      let modelReadyPromise;
+
       function setMode(mode) {
-        const isRaw = mode === "raw";
-        sceneImage.src = isRaw ? "./scene-fixed-input.jpg" : "./scene-trained-model.jpg";
-        sceneImage.alt = isRaw ? "固定点位垃圾投放点基础画面" : "固定点位垃圾投放点区域识别效果";
-        caption.textContent = isRaw
-          ? "固定机位基础画面：用于展示投放点、桶身和地面警戒区。"
-          : "区域识别效果：围绕检测区域与地面警戒区识别满溢、散落和脏污风险。";
-        stageStatus.textContent = isRaw ? "基础画面" : "区域识别效果";
-        showRaw.classList.toggle("active", isRaw);
-        showResult.classList.toggle("active", !isRaw);
-        setActiveSample();
-        setActiveGallery();
-        imageSize.textContent = "1920 × 1080";
+        currentMode = mode;
+        showRaw.classList.toggle("active", mode === "raw");
+        showResult.classList.toggle("active", mode === "result");
+        analysisOverlay.classList.toggle("hidden", mode === "raw");
+        if (mode === "raw") {
+          caption.textContent = "基础画面：用于查看固定机位视角、投放点范围和地面警戒区。";
+          stageStatus.textContent = "基础画面";
+          return;
+        }
+        caption.textContent = currentImage.caption;
+        stageStatus.textContent = currentImage.title;
+        recognizeCurrentImage();
       }
 
       function setActiveSample(index) {
@@ -735,17 +793,183 @@
 
       function showCustomerSample(index) {
         const sample = customerSamples[index];
-        sceneImage.onload = () => {
-          imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+        currentImage = {
+          url: sample.image,
+          title: sample.status,
+          caption: sample.caption,
+          sampleIndex: index
         };
         sceneImage.src = sample.image;
         sceneImage.alt = sample.status;
         caption.textContent = sample.caption;
         stageStatus.textContent = sample.status;
-        showRaw.classList.remove("active");
-        showResult.classList.remove("active");
         setActiveSample(index);
         setActiveGallery(index);
+        setMode("result");
+      }
+
+      function loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = url;
+        });
+      }
+
+      function extractFeaturesFromImage(image) {
+        const canvas = document.createElement("canvas");
+        const width = 64;
+        const height = 36;
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(image, 0, 0, width, height);
+        const pixels = context.getImageData(0, 0, width, height).data;
+        const features = [];
+        const sums = new Array(24).fill(0);
+        let count = 0;
+        let dark = 0;
+        let bright = 0;
+        let green = 0;
+        let red = 0;
+        let blue = 0;
+        let yellow = 0;
+        let lowerClutter = 0;
+        let edgeEnergy = 0;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const index = (y * width + x) * 4;
+            const r = pixels[index] / 255;
+            const g = pixels[index + 1] / 255;
+            const b = pixels[index + 2] / 255;
+            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+            sums[0] += r;
+            sums[1] += g;
+            sums[2] += b;
+            sums[3] += luma;
+            const isDark = luma < 0.22;
+            const isBright = luma > 0.76;
+            const isGreen = g > r * 1.12 && g > b * 1.12;
+            const isRed = r > g * 1.18 && r > b * 1.18;
+            const isBlue = b > r * 1.15 && b > g * 1.08;
+            const isYellow = r > 0.46 && g > 0.38 && b < 0.32;
+            dark += isDark ? 1 : 0;
+            bright += isBright ? 1 : 0;
+            green += isGreen ? 1 : 0;
+            red += isRed ? 1 : 0;
+            blue += isBlue ? 1 : 0;
+            yellow += isYellow ? 1 : 0;
+            lowerClutter += y > height * 0.5 && (isDark || isBright || isRed || isYellow) ? 1 : 0;
+            if (x > 0 && y > 0) {
+              const left = ((y * width + (x - 1)) * 4);
+              const top = (((y - 1) * width + x) * 4);
+              const leftLuma = (pixels[left] + pixels[left + 1] + pixels[left + 2]) / 765;
+              const topLuma = (pixels[top] + pixels[top + 1] + pixels[top + 2]) / 765;
+              edgeEnergy += Math.abs(luma - leftLuma) + Math.abs(luma - topLuma);
+            }
+            const gx = Math.min(3, Math.floor((x / width) * 4));
+            const gy = Math.min(2, Math.floor((y / height) * 3));
+            sums[4 + gy * 4 + gx] += luma;
+            count += 1;
+          }
+        }
+        features.push(sums[0] / count, sums[1] / count, sums[2] / count, sums[3] / count);
+        features.push(dark / count, bright / count, green / count, red / count, blue / count, yellow / count);
+        features.push(lowerClutter / count, edgeEnergy / count);
+        for (let index = 4; index < sums.length; index += 1) {
+          features.push(sums[index] / (count / 12));
+        }
+        return features;
+      }
+
+      function distance(a, b) {
+        let total = 0;
+        for (let index = 0; index < a.length; index += 1) {
+          const delta = a[index] - b[index];
+          total += delta * delta;
+        }
+        return Math.sqrt(total / a.length);
+      }
+
+      function predict(features) {
+        if (!model.length) {
+          return [];
+        }
+        const ranked = model
+          .map((item) => ({
+            event: item.event,
+            distance: distance(features, item.features)
+          }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 4);
+        const scale = ranked[0]?.distance || 0.01;
+        return ranked.map((item, index) => {
+          const score = Math.max(0.38, Math.min(0.98, Math.exp(-(item.distance - scale) * 7) - index * 0.08));
+          return {
+            event: item.event,
+            score
+          };
+        });
+      }
+
+      function renderPrediction(predictions) {
+        if (!predictions.length) {
+          analysisOverlay.innerHTML = "<b>正在准备识别</b><span>现场事件识别正在加载，请稍后再试。</span>";
+          eventCount.textContent = "准备中";
+          results.innerHTML = "";
+          return;
+        }
+        const top = predictions[0];
+        const event = eventCatalog[top.event];
+        const confidence = `${Math.round(top.score * 100)}%`;
+        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>${event.action}</span>`;
+        eventCount.textContent = `${predictions.length} 项`;
+        results.innerHTML = predictions.slice(0, 3).map((item) => {
+          const detail = eventCatalog[item.event];
+          return `
+            <article class="object-card">
+              <div class="object-top">
+                <div class="object-name">
+                  <b>${detail.title}</b>
+                  <span>${detail.detail}</span>
+                </div>
+                <div class="confidence">${Math.round(item.score * 100)}%</div>
+              </div>
+              <div class="reason">${detail.reason}</div>
+              <div class="action-note">${detail.action}</div>
+            </article>
+          `;
+        }).join("");
+      }
+
+      async function recognizeImageElement(image) {
+        if (!modelReady && modelReadyPromise) {
+          await modelReadyPromise;
+        }
+        const features = extractFeaturesFromImage(image);
+        return predict(features);
+      }
+
+      async function recognizeCurrentImage() {
+        if (!modelReady || currentMode !== "result") return;
+        analysisOverlay.classList.remove("hidden");
+        analysisOverlay.innerHTML = "<b>识别中</b><span>正在读取现场画面并判断异常事件。</span>";
+        const image = await loadImage(currentImage.url);
+        imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
+        renderPrediction(await recognizeImageElement(image));
+      }
+
+      async function trainModel() {
+        model = await Promise.all(trainingSamples.map(async ([event, imagePath]) => {
+          const image = await loadImage(imagePath);
+          return {
+            event,
+            features: extractFeaturesFromImage(image)
+          };
+        }));
+        modelReady = true;
+        recognizeCurrentImage();
       }
 
       customerSamples.forEach((sample, index) => {
@@ -783,16 +1007,28 @@
         const url = URL.createObjectURL(file);
         sceneImage.onload = () => {
           imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
+          recognizeImageElement(sceneImage).then(renderPrediction);
+        };
+        currentImage = {
+          url,
+          title: "现场截图",
+          caption: "系统已完成现场截图识别，右侧为异常事件判断和处置建议。",
+          sampleIndex: null
         };
         sceneImage.src = url;
         sceneImage.alt = "上传的现场截图";
-        caption.textContent = "已上传现场截图，可用于查看固定机位画面和点位状态。";
+        caption.textContent = currentImage.caption;
         stageStatus.textContent = "现场截图";
         showRaw.classList.remove("active");
-        showResult.classList.remove("active");
+        showResult.classList.add("active");
         setActiveSample();
         setActiveGallery();
+        currentMode = "result";
+        analysisOverlay.classList.remove("hidden");
+        analysisOverlay.innerHTML = "<b>识别中</b><span>正在读取现场画面并判断异常事件。</span>";
       });
+
+      modelReadyPromise = trainModel();
     </script>
   </body>
 </html>
