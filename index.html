@@ -564,7 +564,7 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检平台</h1>
-            <p class="subtitle">基于固定机位画面识别满溢、散落、脏污和投放口阻挡等现场异常，并联动点位数据生成处置建议。</p>
+            <p class="subtitle">基于固定机位画面识别满溢、散落、脏污等现场状态，并联动点位数据生成处置建议。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
@@ -619,6 +619,7 @@
                 <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：桶口和桶旁堆积风险</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：袋装和零散垃圾落地区域</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>脏污区域：油污、泥渍、积水和反光</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：未发现明显异常，保持例行巡检</span></div>
               </div>
             </div>
 
@@ -699,11 +700,11 @@
           reason: "地面纹理和亮度变化接近脏污、积水或反光场景，需要结合天气和清扫记录复核。",
           action: "建议作为保洁工单触发项，结合雨天、清扫记录和点位时段降低误报。"
         },
-        blocked: {
-          title: "投放口阻挡",
-          detail: "大袋垃圾、箱盖阻挡",
-          reason: "投放口附近存在遮挡或压盖风险，可能影响正常投放和箱体使用。",
-          action: "建议提示现场处置，优先确认投放口是否可正常开启。"
+        normal: {
+          title: "未发现明显异常",
+          detail: "投放点状态正常",
+          reason: "画面中未发现明显满溢、散落或脏污特征，适合作为例行巡检状态记录。",
+          action: "建议保持常规巡检频次，结合桶内高度和清运计划持续观察。"
         }
       };
 
@@ -730,11 +731,11 @@
           caption: "地面存在积水、反光和脏污边界，系统可提示脏污复核并结合天气和清扫记录降低误报。"
         },
         {
-          title: "箱盖阻挡",
-          event: "blocked",
-          status: "现场案例：箱盖阻挡",
-          image: "./customer-scenes/bin-lid-blocked.jpg",
-          caption: "大袋垃圾压在投放口附近，系统可识别投放口阻挡并触发现场处置提醒。"
+          title: "正常画面",
+          event: "normal",
+          status: "现场案例：正常画面",
+          image: "./customer-scenes/normal-site.jpg",
+          caption: "投放点周边未发现明显满溢、散落或脏污，系统可记录为例行巡检状态。"
         }
       ];
 
@@ -747,9 +748,9 @@
         ["dirty", "./training-scenes/dirty/dirty-01.jpg"],
         ["dirty", "./training-scenes/dirty/dirty-02.jpg"],
         ["dirty", "./training-scenes/dirty/dirty-03.jpg"],
-        ["blocked", "./training-scenes/blocked/blocked-01.jpg"],
-        ["blocked", "./training-scenes/blocked/blocked-02.jpg"],
-        ["blocked", "./training-scenes/blocked/blocked-03.jpg"]
+        ["normal", "./training-scenes/normal/normal-01.jpg"],
+        ["normal", "./training-scenes/normal/normal-02.jpg"],
+        ["normal", "./training-scenes/normal/normal-03.jpg"]
       ];
 
       let currentMode = "result";

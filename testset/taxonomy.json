@@ -32,13 +32,13 @@
       "must_have": ["桶口区域", "桶旁区域", "堆积程度"]
     },
     {
-      "id": "lid_blocked",
-      "name_zh": "箱盖被压/阻挡",
-      "positive_examples": ["大件物体压盖", "袋子卡住箱盖", "投放口被挡"],
-      "negative_examples": ["正常闭合", "正常打开", "人手短暂接触"],
-      "boundary_examples": ["箱盖半开", "物体靠近但未压住", "短时遮挡"],
-      "annotation_modes": ["bbox", "event_state"],
-      "must_have": ["阻挡物", "箱盖状态", "投放口状态"]
+      "id": "normal_scene",
+      "name_zh": "正常画面",
+      "positive_examples": ["投放点周边无明显满溢", "无明显散落", "无明显脏污"],
+      "negative_examples": ["满溢", "袋装垃圾落地", "明显污渍或积水"],
+      "boundary_examples": ["少量树叶", "地面阴影", "轻微反光", "远处非目标区域杂物"],
+      "annotation_modes": ["event_state", "region"],
+      "must_have": ["正例", "负例", "边界例", "检测区域"]
     },
     {
       "id": "illegal_drop_behavior",
