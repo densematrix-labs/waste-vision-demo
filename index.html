@@ -705,6 +705,17 @@
             <div class="results" id="results"></div>
           </div>
           <div class="panel-header">
+            <h2 class="panel-title">模型链路</h2>
+          </div>
+          <div class="panel-body">
+            <div class="signal-list">
+              <div class="signal"><strong>状态判断</strong><b>YOLO11n</b><span>整图分类输出满溢、散落、脏污、正常</span></div>
+              <div class="signal"><strong>检测框</strong><b>YOLO11n</b><span>检测模型输出候选框，前端只负责按坐标绘制</span></div>
+              <div class="signal"><strong>运行方式</strong><b>本地推理</b><span>模型文件加载到浏览器后执行，显示实际耗时</span></div>
+              <div class="signal"><strong>后处理</strong><b>NMS</b><span>过滤重叠候选框，保留高置信度结果</span></div>
+            </div>
+          </div>
+          <div class="panel-header">
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
@@ -907,7 +918,7 @@
           ort.InferenceSession.create(detectionModelUrl, { executionProviders: ["wasm"] })
         ]);
         modelReady = true;
-        modelStatus.textContent = "YOLO 检测已加载";
+        modelStatus.textContent = "YOLO 本地推理已加载";
         await recognizeCurrentImage();
       }
 
@@ -1149,7 +1160,7 @@
               </div>
               <div class="confidence">${Math.round(timing.detect)} ms</div>
             </div>
-            <div class="reason">前端加载 trash-object-yolo11n-det-expanded.onnx 后在浏览器本地执行 ONNX 推理，检测框为模型输出后经 NMS 过滤的结果。</div>
+            <div class="reason">浏览器加载 YOLO11n 检测模型后，对当前画面执行本地推理；检测框为模型输出后经 NMS 过滤的结果，前端只负责按坐标绘制。</div>
             <div class="action-note">分类耗时 ${Math.round(timing.classify)} ms，检测耗时 ${Math.round(timing.detect)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
           </article>
         `;

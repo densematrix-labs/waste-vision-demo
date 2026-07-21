@@ -29,6 +29,8 @@ models/public-detection-expanded/trash-object-yolo11n-det-expanded.onnx
 models/public-detection-expanded/trash-object-yolo11n-det-expanded.pt
 ```
 
+ONNX 是 Open Neural Network Exchange 的缩写，可以理解为“神经网络模型的通用运行格式”。本项目不是用 ONNX 训练模型，而是先用 Ultralytics YOLO 训练出 PyTorch `.pt` 权重，再导出为 `.onnx`，这样静态网页可以在浏览器里通过 ONNX Runtime Web 直接执行模型推理。`.onnx` 不是另一套算法，也不是前端假数据；它是训练后模型权重和计算图的可部署版本。
+
 分类模型训练命令在 Docker 内执行：
 
 ```bash
