@@ -31,7 +31,7 @@ models/metrics.json
 docker run --rm -v "$PWD:/workspace" -w /workspace python:3.11-slim bash -lc 'apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 libgl1 libxcb1 libxext6 && pip install --no-cache-dir ultralytics onnx onnxslim && yolo classify train data=/workspace/yolo_dataset model=yolo11n-cls.pt epochs=80 imgsz=224 batch=4 workers=0 erasing=0.0 degrees=0 translate=0 scale=0 fliplr=0.0 hsv_h=0 hsv_s=0 hsv_v=0 project=/workspace/yolo_runs name=waste_cls exist_ok=True'
 ```
 
-训练数据当前为 15 张现场图片，类别为 `dirty`、`litter`、`normal`、`overflow`。训练配置关闭随机增强，用于让 demo 中的客户现场样张和上传链路走实际模型推理。内置验证集和训练集目前使用同一批弱标注图片，最终 Top-1 / Top-5 为 100%，该指标只说明模型已拟合这批样张，不代表生产泛化效果。
+训练数据当前为 19 张现场图片，类别为 `dirty`、`litter`、`normal`、`overflow`。训练配置关闭随机增强，用于让 demo 中的客户现场样张和上传链路走实际模型推理。内置验证集和训练集目前使用同一批弱标注图片，最终 Top-1 / Top-5 为 100%，该指标只说明模型已拟合这批样张，不代表生产泛化效果。
 
 ## 边界
 
@@ -43,10 +43,10 @@ docker run --rm -v "$PWD:/workspace" -w /workspace python:3.11-slim bash -lc 'ap
 
 页面使用 4 张代表性固定点位画面：
 
-- `customer-scenes/pileup-bin-area.jpg`：满溢/堆积
-- `customer-scenes/ground-litter-zone.jpg`：小包落地
-- `customer-scenes/dirty-water-zone.jpg`：地面脏污
-- `customer-scenes/normal-site.jpg`：正常画面
+- `customer-scenes/overflow-yard-pile.jpg`：满溢/堆积
+- `customer-scenes/overflow-bin-row.jpg`：桶口外溢
+- `customer-scenes/dirty-ground-scatter.jpg`：地面散落
+- `customer-scenes/bulky-waste-pile.jpg`：大件堆放
 
 ## 治理事件测试集
 

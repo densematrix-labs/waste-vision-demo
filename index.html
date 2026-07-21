@@ -637,7 +637,7 @@
             <button id="showResult">区域识别效果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/pileup-bin-area.jpg" alt="现场案例：满溢/堆积" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg" alt="现场案例：满溢/堆积" />
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
               <span>正在读取现场画面并判断异常事件。</span>
@@ -723,29 +723,29 @@
           title: "满溢/堆积",
           event: "overflow",
           status: "现场案例：满溢/堆积",
-          image: "./customer-scenes/pileup-bin-area.jpg",
-          caption: "桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。"
+          image: "./customer-scenes/overflow-yard-pile.jpg",
+          caption: "投放点周边出现大面积袋装垃圾堆积，系统可触发清运复核并提升处置优先级。"
         },
         {
-          title: "小包落地",
-          event: "litter",
-          status: "现场案例：小包落地",
-          image: "./customer-scenes/ground-litter-zone.jpg",
-          caption: "地面警戒区内出现袋装和零散垃圾，系统可识别落地异常并提示保洁复核。"
+          title: "桶口外溢",
+          event: "overflow",
+          status: "现场案例：桶口外溢",
+          image: "./customer-scenes/overflow-bin-row.jpg",
+          caption: "多只垃圾桶已接近或超过容量上限，桶口和桶旁同步出现外溢垃圾。"
         },
         {
-          title: "地面脏污",
+          title: "地面散落",
           event: "dirty",
-          status: "现场案例：地面脏污",
-          image: "./customer-scenes/dirty-water-zone.jpg",
-          caption: "地面存在积水、反光和脏污边界，系统可提示脏污复核并结合天气和清扫记录降低误报。"
+          status: "现场案例：地面散落",
+          image: "./customer-scenes/dirty-ground-scatter.jpg",
+          caption: "点位地面有零散垃圾、泥水和积水痕迹，系统可提示保洁复核并结合天气记录判断处置优先级。"
         },
         {
-          title: "正常画面",
-          event: "normal",
-          status: "现场案例：正常画面",
-          image: "./customer-scenes/normal-site.jpg",
-          caption: "投放点周边未发现明显满溢、散落或脏污，系统可记录为例行巡检状态。"
+          title: "大件堆放",
+          event: "litter",
+          status: "现场案例：大件堆放",
+          image: "./customer-scenes/bulky-waste-pile.jpg",
+          caption: "投放点旁堆放大件家具和混合废弃物，系统可识别为周边散落并提示现场复核。"
         }
       ];
 
