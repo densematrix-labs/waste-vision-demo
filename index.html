@@ -896,16 +896,22 @@
         if (!model.length) {
           return [];
         }
-        const ranked = model
-          .map((item) => ({
-            event: item.event,
-            distance: distance(features, item.features)
-          }))
+        const nearestByEvent = model.reduce((accumulator, item) => {
+          const itemDistance = distance(features, item.features);
+          if (!accumulator[item.event] || itemDistance < accumulator[item.event].distance) {
+            accumulator[item.event] = {
+              event: item.event,
+              distance: itemDistance
+            };
+          }
+          return accumulator;
+        }, {});
+        const ranked = Object.values(nearestByEvent)
           .sort((a, b) => a.distance - b.distance)
           .slice(0, 4);
-        const scale = ranked[0]?.distance || 0.01;
+        const scale = Math.max(ranked[0]?.distance || 0.01, 0.01);
         return ranked.map((item, index) => {
-          const score = Math.max(0.38, Math.min(0.98, Math.exp(-(item.distance - scale) * 7) - index * 0.08));
+          const score = Math.max(0.28, Math.min(0.98, Math.exp(-(item.distance - ranked[0].distance) / scale * 1.7) - index * 0.07));
           return {
             event: item.event,
             score
@@ -961,7 +967,11 @@
       }
 
       async function trainModel() {
-        model = await Promise.all(trainingSamples.map(async ([event, imagePath]) => {
+        const labeledSamples = [
+          ...trainingSamples,
+          ...customerSamples.map((sample) => [sample.event, sample.image])
+        ];
+        model = await Promise.all(labeledSamples.map(async ([event, imagePath]) => {
           const image = await loadImage(imagePath);
           return {
             event,
