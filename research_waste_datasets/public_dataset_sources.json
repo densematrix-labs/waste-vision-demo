@@ -1,0 +1,73 @@
+[
+  {
+    "name": "Roboflow garbage can overflow",
+    "url": "https://universe.roboflow.com/mariswary-deepak-4ajr0/garbage-can-overflow",
+    "task": "object_detection",
+    "license": "CC BY 4.0 as displayed by Roboflow Universe",
+    "size": "1974 images",
+    "classes": ["empty", "Broken trash can", "Close_empty", "Close_full", "closed", "full", "Healthy trash can", "Open_empty", "Open_full", "Trash flow"],
+    "recommendedUse": "Best public match for bin fullness and overflow. Export as YOLO, then map full/open_full/close_full/trash_flow to overflow and empty/open_empty/close_empty/healthy to normal.",
+    "status": "candidate_requires_export"
+  },
+  {
+    "name": "TACO: Trash Annotations in Context",
+    "url": "https://github.com/pedropro/TACO",
+    "archiveUrl": "https://zenodo.org/records/3354286",
+    "task": "object_detection_instance_segmentation",
+    "license": "Repository toolkit is MIT; dataset archive is open on Zenodo. Confirm image-level usage terms before commercial delivery.",
+    "size": "about 1500 images / 4784 annotations; archive about 1.1GB",
+    "classes": ["hierarchical litter taxonomy"],
+    "recommendedUse": "Use for loose litter/trash-object detection only. Do not map to overflow, dirty, or normal.",
+    "status": "candidate_convert_coco_to_yolo"
+  },
+  {
+    "name": "Mendeley Trash Detection Dataset",
+    "url": "https://data.mendeley.com/datasets/z732f9pwxt/1",
+    "task": "object_detection",
+    "license": "CC BY 4.0",
+    "size": "not listed on page",
+    "classes": ["BIODEGRADABLE", "CARDBOARD", "GLASS", "METAL", "PAPER", "PLASTIC", "ALL"],
+    "recommendedUse": "Use YOLO-format boxes to pretrain a generic trash-object detector or map all boxes to litter for scene support.",
+    "status": "candidate_download_from_mendeley"
+  },
+  {
+    "name": "Innovatiana Garbage Detection Dataset",
+    "url": "https://www.innovatiana.com/en/datasets/garbage-detection",
+    "task": "object_detection",
+    "license": "CC BY 4.0",
+    "size": "about 20900 files",
+    "classes": ["biodegradable", "cardboard", "glass", "metal", "paper", "plastic"],
+    "recommendedUse": "YOLOv5-compatible object detection supplement for material/trash objects. Not a scene-anomaly source.",
+    "status": "candidate_kaggle_download"
+  },
+  {
+    "name": "UCI RealWaste",
+    "url": "https://archive.ics.uci.edu/dataset/908/realwaste",
+    "task": "image_classification",
+    "license": "UCI dataset terms; confirm before redistribution",
+    "size": "4752 images / 656.6MB",
+    "classes": ["Cardboard", "Food Organics", "Glass", "Metal", "Miscellaneous Trash", "Paper", "Plastic", "Textile Trash", "Vegetation"],
+    "recommendedUse": "Classification transfer-learning supplement only. Keep separate from scene anomaly model.",
+    "status": "candidate_pretraining_only"
+  },
+  {
+    "name": "TrashCan 1.0",
+    "url": "https://conservancy.umn.edu/items/6dd6a960-c44a-4510-a679-efb8c82ebfb7",
+    "task": "instance_segmentation",
+    "license": "Academic teaching/research only; commercial use requires JAMSTEC permission",
+    "size": "7212 images / 527.41MB dataset zip",
+    "classes": ["underwater trash material/instance taxonomies"],
+    "recommendedUse": "Exclude from commercial customer demo unless permission is obtained. Domain is underwater and mismatched.",
+    "status": "excluded"
+  },
+  {
+    "name": "Unidata Outdoor Garbage Dataset",
+    "url": "https://unidata.pro/datasets/outdoor-garbage/",
+    "task": "object_detection_classification",
+    "license": "Paid / agreement-based full dataset",
+    "size": "5000+ images",
+    "classes": ["full", "empty", "scattered"],
+    "recommendedUse": "Highly relevant if purchased or access is granted. Do not assume free reuse.",
+    "status": "defer_purchase_or_access"
+  }
+]
