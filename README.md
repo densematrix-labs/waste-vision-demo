@@ -28,14 +28,50 @@ https://densematrix-labs.github.io/waste-vision-demo/
 
 ## 当前实现
 
-当前 GitHub Pages 版本是纯静态页面。为了避免在浏览器暴露服务端密钥，页面内置了四张客户 RB 图的结构化 VLM 研判结果，用于演示客户沟通口径和交互流程。
+当前 GitHub Pages 页面默认调用真实 VLM 代理，不在浏览器暴露服务端密钥。链路为：
 
-真实上传图片的在线 VLM 分析不能直接放在静态网页里调用，需要通过服务端代理或 Cloudflare Worker 转发。代理服务应完成：
+```bash
+浏览器 → Cloudflare Worker → DenseMatrix LLM Proxy → VLM → 结构化 JSON → 前端绘制证据区域
+```
+
+代理服务负责：
 
 - 接收现场截图
 - 调用视觉大模型
 - 返回结构化 JSON，包括事件类型、证据区域、判断依据、置信度和工单建议
 - 记录审计日志，便于复核模型输出是否符合现场事实
+
+离线演示模式保留在 `?offline=1`，只用于上游 VLM 服务不可用时查看页面交互，不作为默认客户演示路径。
+
+## VLM 代理
+
+Cloudflare Worker 位于：
+
+```bash
+workers/vlm-proxy/
+```
+
+部署时设置密钥：
+
+```bash
+cd workers/vlm-proxy
+npx wrangler secret put LLM_PROXY_API_KEY
+npx wrangler deploy
+```
+
+默认前端调用地址：
+
+```bash
+https://waste-vision-vlm.densematrix.ai/analyze
+```
+
+如需临时改用其他代理地址，可在页面加载前设置：
+
+```html
+<script>
+  window.WASTE_VISION_VLM_API_URL = "https://example.com/analyze";
+</script>
+```
 
 ## VLM 输出结构
 

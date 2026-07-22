@@ -818,6 +818,9 @@
 
       const dashboardAssetVersion = "rb-scenes-20260722";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
+      const pageParams = new URLSearchParams(window.location.search);
+      const vlmApiUrl = window.WASTE_VISION_VLM_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
+      const offlinePreviewEnabled = pageParams.get("offline") === "1";
 
       const customerSamples = [
         {
@@ -901,7 +904,7 @@
         }
       ];
 
-      const uploadedImageAnalysis = {
+      const offlineUploadedImageAnalysis = {
         predictions: [
           { event: "litter", score: 0.62 },
           { event: "overflow", score: 0.49 },
@@ -997,10 +1000,85 @@
       }
 
       async function loadVlmAnalyzer() {
-        await new Promise((resolve) => window.setTimeout(resolve, 160));
+        if (offlinePreviewEnabled) {
+          await new Promise((resolve) => window.setTimeout(resolve, 160));
+          modelStatus.textContent = "离线预览";
+        } else {
+          modelStatus.textContent = "VLM在线";
+        }
         modelReady = true;
-        modelStatus.textContent = "VLM就绪";
         await recognizeCurrentImage();
+      }
+
+      function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      async function imageToDataUrl(imageUrl) {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`现场图片读取失败：${response.status}`);
+        }
+        return blobToDataUrl(await response.blob());
+      }
+
+      function normalizeVlmAnalysis(payload) {
+        const predictions = Array.isArray(payload?.predictions) ? payload.predictions : [];
+        const regions = Array.isArray(payload?.regions) ? payload.regions : [];
+        return {
+          predictions: predictions
+            .map((item) => ({
+              event: eventCatalog[item.event] ? item.event : "normal",
+              score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0.01
+            }))
+            .sort((a, b) => b.score - a.score),
+          regions: regions
+            .filter((box) => box && Number.isFinite(Number(box.x1)) && Number.isFinite(Number(box.y1)) && Number.isFinite(Number(box.x2)) && Number.isFinite(Number(box.y2)))
+            .map((box) => ({
+              label: String(box.label || "scattered_litter"),
+              title: String(box.title || "证据区域"),
+              score: Number.isFinite(Number(box.score)) ? Number(box.score) : 0.5,
+              x1: Number(box.x1),
+              y1: Number(box.y1),
+              x2: Number(box.x2),
+              y2: Number(box.y2)
+            })),
+          rationale: String(payload?.rationale || "视觉大模型已完成画面理解，并生成结构化研判结果。"),
+          model: String(payload?.model || "VLM")
+        };
+      }
+
+      async function requestVlmAnalysis(image, imageUrl) {
+        const imageDataUrl = imageUrl ? await imageToDataUrl(imageUrl) : await blobToDataUrl(await fetch(image.src).then((response) => response.blob()));
+        const response = await fetch(vlmApiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: imageDataUrl,
+            width: image.naturalWidth,
+            height: image.naturalHeight,
+            context: {
+              scene: currentImage.title,
+              caption: currentImage.caption,
+              signals: {
+                binLevel: "接入",
+                lidOpenEvents: "接入",
+                collectionSchedule: "接入",
+                disposalRecords: "接入"
+              }
+            }
+          })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || `VLM 服务返回 ${response.status}`);
+        }
+        return normalizeVlmAnalysis(payload);
       }
 
       function normalizePredictions(predictions) {
@@ -1131,10 +1209,13 @@
           await modelReadyPromise;
         }
         const start = performance.now();
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
-        const analysis = currentImage.sampleIndex === null ? uploadedImageAnalysis : vlmAnalyses[currentImage.sampleIndex];
+        const analysis = offlinePreviewEnabled
+          ? currentImage.sampleIndex === null ? offlineUploadedImageAnalysis : vlmAnalyses[currentImage.sampleIndex]
+          : await requestVlmAnalysis(image, currentImage.url);
         const understoodAt = performance.now();
-        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        if (offlinePreviewEnabled) {
+          await new Promise((resolve) => window.setTimeout(resolve, 80));
+        }
         const groundedAt = performance.now();
         return {
           predictions: analysis.predictions,
@@ -1143,7 +1224,7 @@
             understanding: understoodAt - start,
             grounding: groundedAt - understoodAt,
             total: groundedAt - start,
-            rationale: analysis.rationale
+            rationale: `${analysis.rationale}（${analysis.model}）`
           }
         };
       }

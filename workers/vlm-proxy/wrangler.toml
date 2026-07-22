@@ -1,0 +1,13 @@
+name = "waste-vision-vlm"
+main = "src/index.js"
+compatibility_date = "2026-07-22"
+account_id = "9769fb723af85ce0b991d459a228cefa"
+
+routes = [
+  { pattern = "waste-vision-vlm.densematrix.ai/*", zone_name = "densematrix.ai" }
+]
+
+[vars]
+LLM_PROXY_BASE_URL = "https://llm-proxy.densematrix.ai"
+VLM_MODEL = "gemini-2.5-flash"
+ALLOWED_ORIGINS = "https://densematrix-labs.github.io,http://localhost:8099,http://127.0.0.1:8099"
