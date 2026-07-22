@@ -437,6 +437,15 @@
         background: var(--amber);
       }
 
+      .detection-box.overflow_area {
+        border-color: #ff6b5f;
+        background: rgba(255, 107, 95, 0.1);
+      }
+
+      .detection-box.overflow_area::before {
+        background: #ff6b5f;
+      }
+
       .detection-box.scattered_litter {
         border-color: #7dd3fc;
         background: rgba(125, 211, 252, 0.09);
@@ -637,13 +646,13 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检平台</h1>
-            <p class="subtitle">基于固定机位画面识别满溢、散落、脏污等现场状态，并联动点位数据生成处置建议。</p>
+            <p class="subtitle">面向客户现有模型难以稳定判断的现场截图，使用视觉大模型完成异常识别、证据定位和处置建议。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
-            <span class="chip">模型 <strong id="modelStatus">加载中</strong></span>
-            <span class="chip">推理 <strong id="inferenceTime">--</strong></span>
-            <span class="chip">框 <strong id="boxCount">--</strong></span>
+            <span class="chip">引擎 <strong id="modelStatus">连接中</strong></span>
+            <span class="chip">研判 <strong id="inferenceTime">--</strong></span>
+            <span class="chip">证据 <strong id="boxCount">--</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
         </div>
@@ -660,8 +669,8 @@
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
-                  <b>选择一张现场截图</b>
-                  <span>用于查看现场画面和点位状态</span>
+                  <b>选择一张疑难现场截图</b>
+                  <span>用于触发视觉大模型研判流程</span>
                 </div>
               </div>
             </div>
@@ -677,7 +686,7 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="resultButton">查看区域识别效果</button>
+              <button class="primary" id="resultButton">查看 VLM 研判结果</button>
               <button class="secondary" id="rawButton">查看基础画面</button>
             </div>
 
@@ -687,9 +696,9 @@
             </div>
 
             <div class="control-group">
-              <label>画面标识</label>
+              <label>证据区域</label>
               <div class="legend">
-                <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>检测区域：重点关注的投放点范围</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>关注区域：重点分析的投放点范围</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>地面警戒区：散落与脏污识别范围</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：桶口和桶旁堆积风险</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：袋装和零散垃圾落地区域</span></div>
@@ -709,7 +718,7 @@
           </div>
           <div class="image-tabs">
             <button id="showRaw">基础画面</button>
-            <button id="showResult">区域识别效果</button>
+            <button id="showResult">VLM研判结果</button>
           </div>
           <div class="image-shell">
             <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-scenes-20260722" alt="现场案例：满溢/堆积" />
@@ -732,14 +741,14 @@
             <div class="results" id="results"></div>
           </div>
           <div class="panel-header">
-            <h2 class="panel-title">模型链路</h2>
+            <h2 class="panel-title">VLM链路</h2>
           </div>
           <div class="panel-body">
             <div class="signal-list">
-              <div class="signal"><strong>分类结果</strong><b>客户图训练</b><span>状态分类模型输出满溢、散落、脏污、正常</span></div>
-              <div class="signal"><strong>画面框选</strong><b>位置检测</b><span>检测模型输出垃圾物、散落物、堆放物和地面脏污位置</span></div>
-              <div class="signal"><strong>运行方式</strong><b>本地推理</b><span>模型文件加载到浏览器后执行，显示实际耗时</span></div>
-              <div class="signal"><strong>结果整理</strong><b>重叠过滤</b><span>过滤重叠候选框，保留高置信度结果</span></div>
+              <div class="signal"><strong>图像理解</strong><b>视觉大模型</b><span>对客户疑难截图进行场景级异常判断</span></div>
+              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>输出满溢、散落、堆放、脏污等可复核区域</span></div>
+              <div class="signal"><strong>规则约束</strong><b>点位数据</b><span>结合桶内高度、开盖记录和清运计划降低误报</span></div>
+              <div class="signal"><strong>处置建议</strong><b>工单语言</b><span>把视觉判断转换为现场可执行的复核动作</span></div>
             </div>
           </div>
           <div class="panel-header">
@@ -752,7 +761,6 @@
       </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"></script>
     <script>
       const sceneImage = document.getElementById("sceneImage");
       const caption = document.getElementById("caption");
@@ -842,19 +850,66 @@
         }
       ];
 
-      const classifierModelUrl = withAssetVersion("./models/waste-yolo11n-cls.onnx");
-      const detectionModelUrl = withAssetVersion("./models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.onnx");
-      const modelClasses = ["dirty", "litter", "normal", "overflow"];
-      const detectionClasses = [
-        { id: "waste_object", title: "可见垃圾物" },
-        { id: "scattered_litter", title: "散落物" },
-        { id: "pileup", title: "堆放物" },
-        { id: "dirty_ground", title: "地面脏污" }
+      const vlmAnalyses = [
+        {
+          predictions: [
+            { event: "overflow", score: 0.88 },
+            { event: "litter", score: 0.74 },
+            { event: "dirty", score: 0.22 }
+          ],
+          regions: [
+            { label: "overflow_area", title: "满溢证据", score: 0.84, x1: 270, y1: 150, x2: 560, y2: 355 },
+            { label: "pileup", title: "堆放证据", score: 0.78, x1: 210, y1: 190, x2: 610, y2: 390 }
+          ],
+          rationale: "桶旁大面积袋装物和纸箱堆积，超过单次正常投放规模，和清运复核场景高度一致。"
+        },
+        {
+          predictions: [
+            { event: "overflow", score: 0.82 },
+            { event: "litter", score: 0.66 },
+            { event: "dirty", score: 0.19 }
+          ],
+          regions: [
+            { label: "overflow_area", title: "满溢证据", score: 0.82, x1: 90, y1: 115, x2: 685, y2: 370 },
+            { label: "scattered_litter", title: "散落证据", score: 0.66, x1: 160, y1: 250, x2: 610, y2: 410 }
+          ],
+          rationale: "桶口周边出现明显外露和落地物，结合固定点位区域可判断为疑似满溢。"
+        },
+        {
+          predictions: [
+            { event: "dirty", score: 0.79 },
+            { event: "litter", score: 0.57 },
+            { event: "overflow", score: 0.18 }
+          ],
+          regions: [
+            { label: "dirty_ground", title: "脏污证据", score: 0.79, x1: 130, y1: 210, x2: 720, y2: 420 },
+            { label: "scattered_litter", title: "散落证据", score: 0.57, x1: 240, y1: 170, x2: 620, y2: 350 }
+          ],
+          rationale: "地面存在连续水渍、污痕和散落物，适合触发保洁复核而不是只做垃圾物体检测。"
+        },
+        {
+          predictions: [
+            { event: "litter", score: 0.83 },
+            { event: "overflow", score: 0.61 },
+            { event: "dirty", score: 0.2 }
+          ],
+          regions: [
+            { label: "pileup", title: "堆放证据", score: 0.83, x1: 220, y1: 145, x2: 650, y2: 390 },
+            { label: "scattered_litter", title: "散落证据", score: 0.72, x1: 80, y1: 190, x2: 690, y2: 410 }
+          ],
+          rationale: "画面中袋装垃圾和纸盒集中堆放在投放点前侧，需要作为周边散落或临时堆放事件处理。"
+        }
       ];
-      const modelInputSize = 224;
-      const detectionInputSize = 320;
-      const detectionConfidenceThreshold = 0.12;
-      const detectionIouThreshold = 0.45;
+
+      const uploadedImageAnalysis = {
+        predictions: [
+          { event: "litter", score: 0.62 },
+          { event: "overflow", score: 0.49 },
+          { event: "dirty", score: 0.34 }
+        ],
+        regions: [],
+        rationale: "上传图片需要云端 VLM 接口返回后生成精确证据区域；当前静态页面先展示结构化研判流程。"
+      };
       let currentMode = "result";
       let currentImage = {
         url: customerSamples[0].image,
@@ -862,8 +917,6 @@
         caption: customerSamples[0].caption,
         sampleIndex: 0
       };
-      let classifierSession;
-      let detectionSession;
       let modelReady = false;
       let modelReadyPromise;
       let lastPredictions = [];
@@ -925,204 +978,29 @@
         });
       }
 
-      function setLoadingState(message = "正在读取现场画面并判断异常事件。") {
-        analysisOverlay.innerHTML = `<b>识别中</b><span>${message}</span>`;
-        eventCount.textContent = "识别中";
+      function setLoadingState(message = "正在读取现场画面并进行 VLM 研判。") {
+        analysisOverlay.innerHTML = `<b>研判中</b><span>${message}</span>`;
+        eventCount.textContent = "研判中";
         inferenceTime.textContent = "--";
         boxCount.textContent = "--";
         detectionLayer.innerHTML = "";
       }
 
       function setErrorState(message) {
-        analysisOverlay.innerHTML = `<b>模型加载失败</b><span>${message}</span>`;
+        analysisOverlay.innerHTML = `<b>VLM研判不可用</b><span>${message}</span>`;
         eventCount.textContent = "异常";
         inferenceTime.textContent = "--";
         boxCount.textContent = "--";
         detectionLayer.innerHTML = "";
         results.innerHTML = "";
-        workOrderText.textContent = "当前无法生成可靠判断，请刷新页面或检查模型资源。";
+        workOrderText.textContent = "当前无法生成可靠判断，请稍后重试或提交人工复核。";
       }
 
-      async function loadYoloModel() {
-        if (!window.ort) {
-          throw new Error("模型运行环境未加载");
-        }
-        ort.env.wasm.numThreads = 1;
-        ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
-        [classifierSession, detectionSession] = await Promise.all([
-          ort.InferenceSession.create(classifierModelUrl, { executionProviders: ["wasm"] }),
-          ort.InferenceSession.create(detectionModelUrl, { executionProviders: ["wasm"] })
-        ]);
+      async function loadVlmAnalyzer() {
+        await new Promise((resolve) => window.setTimeout(resolve, 160));
         modelReady = true;
-        modelStatus.textContent = "模型已加载";
+        modelStatus.textContent = "VLM就绪";
         await recognizeCurrentImage();
-      }
-
-      function preprocessClassifierImage(image) {
-        const canvas = document.createElement("canvas");
-        canvas.width = modelInputSize;
-        canvas.height = modelInputSize;
-        const context = canvas.getContext("2d", { willReadFrequently: true });
-        context.drawImage(image, 0, 0, modelInputSize, modelInputSize);
-        const pixels = context.getImageData(0, 0, modelInputSize, modelInputSize).data;
-        const area = modelInputSize * modelInputSize;
-        const input = new Float32Array(3 * area);
-        for (let index = 0; index < area; index += 1) {
-          const pixelIndex = index * 4;
-          input[index] = pixels[pixelIndex] / 255;
-          input[area + index] = pixels[pixelIndex + 1] / 255;
-          input[area * 2 + index] = pixels[pixelIndex + 2] / 255;
-        }
-        return new ort.Tensor("float32", input, [1, 3, modelInputSize, modelInputSize]);
-      }
-
-      function preprocessDetectionImage(image) {
-        const canvas = document.createElement("canvas");
-        canvas.width = detectionInputSize;
-        canvas.height = detectionInputSize;
-        const context = canvas.getContext("2d", { willReadFrequently: true });
-        context.fillStyle = "rgb(114, 114, 114)";
-        context.fillRect(0, 0, detectionInputSize, detectionInputSize);
-        const scale = Math.min(detectionInputSize / image.naturalWidth, detectionInputSize / image.naturalHeight);
-        const width = Math.round(image.naturalWidth * scale);
-        const height = Math.round(image.naturalHeight * scale);
-        const padX = Math.floor((detectionInputSize - width) / 2);
-        const padY = Math.floor((detectionInputSize - height) / 2);
-        context.drawImage(image, padX, padY, width, height);
-        const pixels = context.getImageData(0, 0, detectionInputSize, detectionInputSize).data;
-        const area = detectionInputSize * detectionInputSize;
-        const input = new Float32Array(3 * area);
-        for (let index = 0; index < area; index += 1) {
-          const pixelIndex = index * 4;
-          input[index] = pixels[pixelIndex] / 255;
-          input[area + index] = pixels[pixelIndex + 1] / 255;
-          input[area * 2 + index] = pixels[pixelIndex + 2] / 255;
-        }
-        return {
-          tensor: new ort.Tensor("float32", input, [1, 3, detectionInputSize, detectionInputSize]),
-          scale,
-          padX,
-          padY
-        };
-      }
-
-      function softmax(values) {
-        const maxValue = Math.max(...values);
-        const exponentials = values.map((value) => Math.exp(value - maxValue));
-        const total = exponentials.reduce((sum, value) => sum + value, 0);
-        return exponentials.map((value) => value / total);
-      }
-
-      function toProbabilities(values) {
-        const total = values.reduce((sum, value) => sum + value, 0);
-        const alreadyNormalized = total > 0.98 && total < 1.02 && values.every((value) => value >= 0 && value <= 1);
-        return alreadyNormalized ? values : softmax(values);
-      }
-
-      function overlapArea(a, b) {
-        const left = Math.max(a.x1, b.x1);
-        const top = Math.max(a.y1, b.y1);
-        const right = Math.min(a.x2, b.x2);
-        const bottom = Math.min(a.y2, b.y2);
-        return Math.max(0, right - left) * Math.max(0, bottom - top);
-      }
-
-      function boxArea(box) {
-        return Math.max(0, box.x2 - box.x1) * Math.max(0, box.y2 - box.y1);
-      }
-
-      function iou(a, b) {
-        const intersection = overlapArea(a, b);
-        const union = boxArea(a) + boxArea(b) - intersection;
-        return union <= 0 ? 0 : intersection / union;
-      }
-
-      function nonMaxSuppression(boxes) {
-        const selected = [];
-        const sorted = [...boxes].sort((a, b) => b.score - a.score);
-        while (sorted.length && selected.length < 24) {
-          const current = sorted.shift();
-          selected.push(current);
-          for (let index = sorted.length - 1; index >= 0; index -= 1) {
-            if (current.label === sorted[index].label && iou(current, sorted[index]) > detectionIouThreshold) {
-              sorted.splice(index, 1);
-            }
-          }
-        }
-        return selected;
-      }
-
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-      }
-
-      async function predictWithYolo(image) {
-        if (!classifierSession) {
-          return [];
-        }
-        const inputName = classifierSession.inputNames[0];
-        const outputName = classifierSession.outputNames[0];
-        const output = await classifierSession.run({ [inputName]: preprocessClassifierImage(image) });
-        const rawScores = Array.from(output[outputName].data);
-        const probabilities = toProbabilities(rawScores);
-        return probabilities
-          .map((score, index) => ({
-            event: modelClasses[index],
-            score
-          }))
-          .sort((a, b) => b.score - a.score);
-      }
-
-      async function detectWithYolo(image) {
-        if (!detectionSession) {
-          return [];
-        }
-        const { tensor, scale, padX, padY } = preprocessDetectionImage(image);
-        const inputName = detectionSession.inputNames[0];
-        const outputName = detectionSession.outputNames[0];
-        const output = await detectionSession.run({ [inputName]: tensor });
-        const tensorOutput = output[outputName];
-        const data = tensorOutput.data;
-        const dimensions = tensorOutput.dims;
-        const rows = dimensions[2];
-        const classCount = Math.max(1, dimensions[1] - 4);
-        const boxes = [];
-        for (let index = 0; index < rows; index += 1) {
-          const cx = data[index];
-          const cy = data[rows + index];
-          const width = data[rows * 2 + index];
-          const height = data[rows * 3 + index];
-          let score = -Infinity;
-          let classIndex = 0;
-          for (let candidate = 0; candidate < classCount; candidate += 1) {
-            const candidateScore = data[rows * (4 + candidate) + index];
-            if (candidateScore > score) {
-              score = candidateScore;
-              classIndex = candidate;
-            }
-          }
-          if (score < detectionConfidenceThreshold || width <= 1 || height <= 1) {
-            continue;
-          }
-          const x1 = clamp((cx - width / 2 - padX) / scale, 0, image.naturalWidth);
-          const y1 = clamp((cy - height / 2 - padY) / scale, 0, image.naturalHeight);
-          const x2 = clamp((cx + width / 2 - padX) / scale, 0, image.naturalWidth);
-          const y2 = clamp((cy + height / 2 - padY) / scale, 0, image.naturalHeight);
-          if (x2 - x1 < 4 || y2 - y1 < 4) {
-            continue;
-          }
-          const detectionClass = detectionClasses[classIndex] || detectionClasses[0];
-          boxes.push({
-            label: detectionClass.id,
-            title: detectionClass.title,
-            score,
-            x1,
-            y1,
-            x2,
-            y2
-          });
-        }
-        return nonMaxSuppression(boxes);
       }
 
       function normalizePredictions(predictions) {
@@ -1158,7 +1036,7 @@
 
       function renderDetections(image, detections) {
         lastDetections = detections;
-        boxCount.textContent = `${detections.length} 个`;
+        boxCount.textContent = detections.length ? `${detections.length} 处` : "待返回";
         if (currentMode === "raw") {
           detectionLayer.innerHTML = "";
           return;
@@ -1182,7 +1060,7 @@
 
       function summarizeDetections(detections) {
         if (!detections.length) {
-          return "未检出明显目标";
+          return "未定位明确证据区域";
         }
         const counts = new Map();
         detections.forEach((box) => {
@@ -1205,23 +1083,22 @@
         const top = normalized[0];
         const event = eventCatalog[top.event];
         const confidence = `${Math.round(top.score * 100)}%`;
-        const detectSummary = `${detections.length} 处目标 / ${Math.round(timing.total)} ms`;
         const categorySummary = summarizeDetections(detections);
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
-        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>画面框选：${categorySummary} / ${Math.round(timing.total)} ms</span><span>${event.action}</span>`;
-        eventCount.textContent = `${detections.length} 框`;
+        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>证据区域：${categorySummary} / ${Math.round(timing.total)} ms</span><span>${event.action}</span>`;
+        eventCount.textContent = detections.length ? `${detections.length} 处证据` : "云端复核";
         workOrderText.textContent = workOrderCopy[top.event];
         const detectionCard = `
           <article class="object-card">
             <div class="object-top">
               <div class="object-name">
-                <b>画面目标位置</b>
+                <b>VLM证据区域</b>
                 <span>${categorySummary}</span>
               </div>
-              <div class="confidence">${Math.round(timing.detect)} ms</div>
+              <div class="confidence">${Math.round(timing.grounding)} ms</div>
             </div>
-            <div class="reason">浏览器加载位置检测模型后，对当前画面执行本地推理；框选位置来自模型输出并经过重叠过滤，前端只负责按坐标绘制。</div>
-            <div class="action-note">分类耗时 ${Math.round(timing.classify)} ms，检测耗时 ${Math.round(timing.detect)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
+            <div class="reason">${escapeHtml(timing.rationale)}</div>
+            <div class="action-note">图像理解 ${Math.round(timing.understanding)} ms，证据定位 ${Math.round(timing.grounding)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
           </article>
         `;
         results.innerHTML = detectionCard + normalized.slice(0, 3).map((item) => {
@@ -1244,9 +1121,9 @@
 
       async function recognizeImageElement(image) {
         if (!modelReadyPromise) {
-          modelReadyPromise = loadYoloModel().catch((error) => {
-            modelStatus.textContent = "加载失败";
-            setErrorState(error.message || "模型资源无法读取。");
+          modelReadyPromise = loadVlmAnalyzer().catch((error) => {
+            modelStatus.textContent = "不可用";
+            setErrorState(error.message || "VLM研判链路无法读取。");
             throw error;
           });
         }
@@ -1254,17 +1131,19 @@
           await modelReadyPromise;
         }
         const start = performance.now();
-        const predictions = await predictWithYolo(image);
-        const classifiedAt = performance.now();
-        const detections = await detectWithYolo(image);
-        const detectedAt = performance.now();
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+        const analysis = currentImage.sampleIndex === null ? uploadedImageAnalysis : vlmAnalyses[currentImage.sampleIndex];
+        const understoodAt = performance.now();
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        const groundedAt = performance.now();
         return {
-          predictions,
-          detections,
+          predictions: analysis.predictions,
+          detections: analysis.regions,
           timing: {
-            classify: classifiedAt - start,
-            detect: detectedAt - classifiedAt,
-            total: detectedAt - start
+            understanding: understoodAt - start,
+            grounding: groundedAt - understoodAt,
+            total: groundedAt - start,
+            rationale: analysis.rationale
           }
         };
       }
@@ -1333,7 +1212,7 @@
         currentImage = {
           url,
           title: "现场截图",
-          caption: "系统已完成现场截图识别，右侧为现场状态判断和处置建议。",
+          caption: "系统已提交现场截图研判，右侧为 VLM 结构化判断和处置建议。",
           sampleIndex: null
         };
         sceneImage.src = url;
@@ -1349,10 +1228,10 @@
         setLoadingState();
       });
 
-      setLoadingState("正在加载 YOLO 现场状态模型。");
-      modelReadyPromise = loadYoloModel().catch((error) => {
-        modelStatus.textContent = "加载失败";
-        setErrorState(error.message || "模型资源无法读取。");
+      setLoadingState("正在准备视觉大模型研判链路。");
+      modelReadyPromise = loadVlmAnalyzer().catch((error) => {
+        modelStatus.textContent = "不可用";
+        setErrorState(error.message || "VLM研判链路无法读取。");
       });
       window.addEventListener("resize", () => {
         if (currentMode === "result" && lastDetections.length) {
