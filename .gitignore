@@ -4,6 +4,7 @@ public_yolo_dataset/
 public_yolo_runs/
 public_training_artifacts/
 yolov8s-worldv2.pt
+yolo11n.pt
 train_model/data/images.tar.gz
 train_model/work/
 garbage_status_mobilenet.pt

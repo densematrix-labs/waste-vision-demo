@@ -45,8 +45,8 @@ datasets:
     name: Household Trash Recycling Dataset
     kaggle_slug: youssefelebiary/household-trash-recycling-dataset
     url: https://www.kaggle.com/datasets/youssefelebiary/household-trash-recycling-dataset
-    status: candidate source from Kaggle search; requires download and schema inspection
-    use: candidate waste_object supplement for household waste boxes
+    status: included in expanded public run; 1000 images selected from 7632 image/label pairs
+    use: maps all boxes to waste_object because source labels are household item categories
   kaggle_trash_detection:
     name: Trash Detection
     kaggle_slug: alyyan/trash-detection
@@ -69,14 +69,14 @@ datasets:
     name: Waste Classification - YOLOv8 dataset
     kaggle_slug: spellsharp/garbage-data
     url: https://www.kaggle.com/datasets/spellsharp/garbage-data
-    status: candidate source from Kaggle search; requires download and schema inspection
-    use: candidate waste_object/scattered_litter supplement if classes map cleanly
+    status: included in expanded public run; 1200 images selected from 22004 image/label pairs
+    use: maps all boxes to waste_object because source labels are material/object categories
   kaggle_trash_detection_image_dataset:
     name: Trash-detection image dataset
     kaggle_slug: ahnaftahmeed/trash-detection-image-dataset
     url: https://www.kaggle.com/datasets/ahnaftahmeed/trash-detection-image-dataset
-    status: candidate source from Kaggle search; requires download and COCO/YOLO schema inspection
-    use: candidate waste_object/scattered_litter supplement for street trash boxes
+    status: included in expanded public run; 1000 images selected from 4142 image/label pairs
+    use: converts YOLO polygon segmentation rows to boxes and maps all boxes to scattered_litter
   roboflow_yolov5_garbage_detection:
     name: Roboflow Yolov5 garbage detection
     url: https://universe.roboflow.com/garbage-detection-oa9nh/yolov5-garbage-detection

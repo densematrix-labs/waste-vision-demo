@@ -9,6 +9,9 @@ INNOVATIANA_LIMIT="${INNOVATIANA_LIMIT:-1000}"
 ALYYAN_LIMIT="${ALYYAN_LIMIT:-1200}"
 DHAKA_LIMIT="${DHAKA_LIMIT:-700}"
 GEO_WASTE_LIMIT="${GEO_WASTE_LIMIT:-600}"
+SPELLSHARP_LIMIT="${SPELLSHARP_LIMIT:-1200}"
+AHNAFTAHMEED_LIMIT="${AHNAFTAHMEED_LIMIT:-1000}"
+HOUSEHOLD_LIMIT="${HOUSEHOLD_LIMIT:-1000}"
 EPOCHS="${EPOCHS:-15}"
 IMGSZ="${IMGSZ:-320}"
 BATCH="${BATCH:-8}"
@@ -22,6 +25,9 @@ docker run --rm \
   -e ALYYAN_LIMIT="$ALYYAN_LIMIT" \
   -e DHAKA_LIMIT="$DHAKA_LIMIT" \
   -e GEO_WASTE_LIMIT="$GEO_WASTE_LIMIT" \
+  -e SPELLSHARP_LIMIT="$SPELLSHARP_LIMIT" \
+  -e AHNAFTAHMEED_LIMIT="$AHNAFTAHMEED_LIMIT" \
+  -e HOUSEHOLD_LIMIT="$HOUSEHOLD_LIMIT" \
   -e EPOCHS="$EPOCHS" \
   -e IMGSZ="$IMGSZ" \
   -e BATCH="$BATCH" \
@@ -32,7 +38,7 @@ docker run --rm \
     apt-get update >/tmp/apt.log &&
     apt-get install -y --no-install-recommends libglib2.0-0 libgl1 libxcb1 libxext6 >/tmp/apt-install.log &&
     pip install --no-cache-dir ultralytics onnx onnxslim >/tmp/pip.log &&
-    python training_pipeline/build_public_detection_dataset.py --download-innovatiana --taco-limit "$TACO_LIMIT" --innovatiana-limit "$INNOVATIANA_LIMIT" --alyyan-limit "$ALYYAN_LIMIT" --dhaka-limit "$DHAKA_LIMIT" --geo-waste-limit "$GEO_WASTE_LIMIT" &&
+    python training_pipeline/build_public_detection_dataset.py --download-innovatiana --taco-limit "$TACO_LIMIT" --innovatiana-limit "$INNOVATIANA_LIMIT" --alyyan-limit "$ALYYAN_LIMIT" --dhaka-limit "$DHAKA_LIMIT" --geo-waste-limit "$GEO_WASTE_LIMIT" --spellsharp-limit "$SPELLSHARP_LIMIT" --ahnaftahmeed-limit "$AHNAFTAHMEED_LIMIT" --household-limit "$HOUSEHOLD_LIMIT" &&
     yolo detect train data=/workspace/public_yolo_dataset/data.yaml model=yolo11n.pt epochs="$EPOCHS" imgsz="$IMGSZ" batch="$BATCH" workers=0 project=/workspace/public_yolo_runs name="$RUN_NAME" exist_ok=True &&
     yolo export model="/workspace/public_yolo_runs/$RUN_NAME/weights/best.pt" format=onnx imgsz="$IMGSZ" opset=12 simplify=True
   '

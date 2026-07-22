@@ -42,6 +42,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--alyyan-limit", type=int, default=0)
     parser.add_argument("--dhaka-limit", type=int, default=0)
     parser.add_argument("--geo-waste-limit", type=int, default=0)
+    parser.add_argument("--spellsharp-limit", type=int, default=0)
+    parser.add_argument("--ahnaftahmeed-limit", type=int, default=0)
+    parser.add_argument("--household-limit", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--download-innovatiana", action="store_true")
     return parser.parse_args()
@@ -200,7 +203,7 @@ def normalize_yolo(label_path: Path, class_map: dict[int, int] | None = None, de
     lines = []
     for raw in label_path.read_text(encoding="utf-8", errors="ignore").splitlines():
         parts = raw.strip().split()
-        if len(parts) != 5:
+        if len(parts) < 5:
             continue
         try:
             source_class = int(float(parts[0]))
@@ -212,11 +215,55 @@ def normalize_yolo(label_path: Path, class_map: dict[int, int] | None = None, de
         target_class = class_map.get(source_class) if class_map is not None else default_class
         if target_class is None:
             continue
-        x, y, w, h = [clip(value) for value in nums]
+        if len(nums) == 4:
+            x, y, w, h = [clip(value) for value in nums]
+        elif len(nums) >= 6 and len(nums) % 2 == 0:
+            xs = [clip(value) for value in nums[0::2]]
+            ys = [clip(value) for value in nums[1::2]]
+            min_x, max_x = min(xs), max(xs)
+            min_y, max_y = min(ys), max(ys)
+            w = max_x - min_x
+            h = max_y - min_y
+            x = min_x + w / 2
+            y = min_y + h / 2
+        else:
+            continue
         if w <= 0 or h <= 0:
             continue
         lines.append(f"{target_class} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
     return lines
+
+
+def build_generic_yolo_source(
+    source_name: str,
+    raw_root: Path,
+    limit: int,
+    seed: int,
+    target_class: str,
+    output_prefix: str,
+    mapping_note: str,
+) -> dict:
+    if limit <= 0:
+        return {"source": source_name, "added": 0, "status": "disabled"}
+    if not raw_root.exists():
+        return {"source": source_name, "added": 0, "status": "not_downloaded"}
+    pairs = find_yolo_pairs(raw_root)
+    random.Random(seed).shuffle(pairs)
+    added = 0
+    for image, label in pairs:
+        if added >= limit:
+            break
+        lines = normalize_yolo(label, default_class=CLASS_IDS[target_class])
+        if add_detection_sample(image, lines, split_for(added), f"{output_prefix}_{added:04d}"):
+            added += 1
+    return {
+        "source": source_name,
+        "available_pairs": len(pairs),
+        "added": added,
+        "status": "ok" if added else "empty",
+        "class_mapping": {"all_source_classes": target_class},
+        "mapping_note": mapping_note,
+    }
 
 
 def build_innovatiana(limit: int, seed: int, should_download: bool) -> dict:
@@ -334,6 +381,49 @@ def build_geo_waste(limit: int, seed: int) -> dict:
     }
 
 
+def build_spellsharp_garbage_data(limit: int, seed: int) -> dict:
+    return build_generic_yolo_source(
+        source_name="spellsharp_garbage_data",
+        raw_root=EXTERNAL
+        / "candidates"
+        / "spellsharp_garbage_data"
+        / "YOLO-Waste-Detection-1"
+        / "YOLO-Waste-Detection-1",
+        limit=limit,
+        seed=seed,
+        target_class="waste_object",
+        output_prefix="spellsharp",
+        mapping_note="YOLO classes are material/object categories, so they are used only as generic waste objects.",
+    )
+
+
+def build_ahnaftahmeed_trash_detection(limit: int, seed: int) -> dict:
+    return build_generic_yolo_source(
+        source_name="ahnaftahmeed_trash_detection",
+        raw_root=EXTERNAL
+        / "candidates"
+        / "ahnaftahmeed_trash_detection_image_dataset"
+        / "trash-detection.v35.yolov5pytorch",
+        limit=limit,
+        seed=seed,
+        target_class="scattered_litter",
+        output_prefix="ahnaftahmeed",
+        mapping_note="YOLOv5 labels include polygon segmentation rows; polygons are converted to boxes and used as street scattered litter.",
+    )
+
+
+def build_household_trash_recycling(limit: int, seed: int) -> dict:
+    return build_generic_yolo_source(
+        source_name="household_trash_recycling",
+        raw_root=EXTERNAL / "candidates" / "household_trash_recycling",
+        limit=limit,
+        seed=seed,
+        target_class="waste_object",
+        output_prefix="household",
+        mapping_note="YOLO classes are household item categories, so they are used only as generic waste objects.",
+    )
+
+
 def write_dataset_yaml() -> None:
     (DATASET / "data.yaml").write_text(
         "\n".join([
@@ -392,6 +482,9 @@ def main() -> None:
         build_alyyan(args.alyyan_limit, args.seed),
         build_visual_pollution_dhaka(args.dhaka_limit, args.seed),
         build_geo_waste(args.geo_waste_limit, args.seed),
+        build_spellsharp_garbage_data(args.spellsharp_limit, args.seed),
+        build_ahnaftahmeed_trash_detection(args.ahnaftahmeed_limit, args.seed),
+        build_household_trash_recycling(args.household_limit, args.seed),
     ]
     write_dataset_yaml()
     write_report(results)
