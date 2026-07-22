@@ -1,0 +1,13 @@
+names:
+  0: overflow_area
+  1: scattered_litter
+  2: pileup
+  3: dirty_ground
+  4: blocked_opening
+
+display_names:
+  overflow_area: 满溢区域
+  scattered_litter: 散落垃圾
+  pileup: 堆放物
+  dirty_ground: 地面脏污
+  blocked_opening: 投放口阻挡

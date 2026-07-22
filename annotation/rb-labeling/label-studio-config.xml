@@ -1,0 +1,17 @@
+<View>
+  <Image name="image" value="$image" zoom="true" zoomControl="true" rotateControl="false"/>
+  <RectangleLabels name="label" toName="image">
+    <Label value="overflow_area" background="#ef4444"/>
+    <Label value="scattered_litter" background="#f59e0b"/>
+    <Label value="pileup" background="#8b5cf6"/>
+    <Label value="dirty_ground" background="#06b6d4"/>
+    <Label value="blocked_opening" background="#64748b"/>
+  </RectangleLabels>
+  <Choices name="quality" toName="image" choice="single" showInLine="true">
+    <Choice value="usable"/>
+    <Choice value="unclear"/>
+    <Choice value="skip"/>
+  </Choices>
+  <Text name="filename" value="$filename"/>
+  <Text name="hint" value="$hint"/>
+</View>
