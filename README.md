@@ -1,13 +1,13 @@
 # 垃圾投放点智能巡检平台
 
-这是一个用于客户沟通的静态网页原型，用固定点位截图呈现垃圾投放点现场状态识别、YOLO 检测框、点位数据联动和工单建议流程。
+这是一个用于客户沟通的静态网页原型，用固定点位截图呈现垃圾投放点现场状态识别、画面目标框选、点位数据联动和工单建议流程。
 
 页面支持：
 
 - 使用固定点位原始截图查看输入画面
 - 使用已训练的 YOLO11n 分类模型生成状态判断
-- 使用已训练的 YOLO11n detection 模型在前端展示真实检测框
-- 展示模型加载状态、推理耗时、检测框数量和模型输出置信度
+- 使用已训练的目标检测模型在前端展示散落物和堆放物位置
+- 展示模型加载状态、推理耗时、框选目标数量和模型输出置信度
 - 展示桶内高度、开盖记录、清运计划等现场信号接入项
 - 展示满溢风险、周边散落、地面脏污、正常状态和工单建议
 - 支持上传现场截图并生成同一套事件判断结果
@@ -18,7 +18,7 @@ https://densematrix-labs.github.io/waste-vision-demo/
 
 ## 模型
 
-当前页面加载仓库内的两个 YOLO11n ONNX 模型进行浏览器端本地推理：
+当前页面加载仓库内的两个 YOLO11n 模型进行浏览器端本地推理：
 
 ```bash
 models/waste-yolo11n-cls.onnx
@@ -37,19 +37,19 @@ ONNX 是 Open Neural Network Exchange 的缩写，可以理解为“神经网络
 docker run --rm -v "$PWD:/workspace" -w /workspace python:3.11-slim bash -lc 'apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 libgl1 libxcb1 libxext6 && pip install --no-cache-dir ultralytics onnx onnxslim && yolo classify train data=/workspace/yolo_dataset model=yolo11n-cls.pt epochs=80 imgsz=224 batch=4 workers=0 erasing=0.0 degrees=0 translate=0 scale=0 fliplr=0.0 hsv_h=0 hsv_s=0 hsv_v=0 project=/workspace/yolo_runs name=waste_cls exist_ok=True'
 ```
 
-分类训练数据当前为 19 张客户现场图片，类别为 `dirty`、`litter`、`normal`、`overflow`。训练配置关闭随机增强，用于让 demo 中的客户现场样张和上传链路走实际模型推理。内置验证集和训练集目前使用同一批弱标注图片，最终 Top-1 / Top-5 为 100%，该指标只说明模型已拟合这批样张，不代表生产泛化效果。
+分类结果来源：页面里的“满溢、散落、脏污、正常”来自 `waste-yolo11n-cls.onnx` 的运行时输出，不是前端按图片名称主观写死。这个模型由 YOLO11n-cls 训练，训练数据当前为 19 张客户 RB 现场图片，类别为 `dirty`、`litter`、`normal`、`overflow`。训练配置关闭随机增强，用于让 demo 中的客户现场样张和上传链路走实际模型推理。内置验证集和训练集目前使用同一批弱标注图片，最终 Top-1 / Top-5 为 100%，该指标只说明模型已拟合这批样张，不代表生产泛化效果。
 
-detection 模型输入尺寸为 320，输出类别统一为 `trash_object`。页面在“区域识别效果”模式下加载 `trash-object-yolo11n-det-expanded.onnx`，对当前画面执行本地 ONNX 推理，并把 NMS 后的 YOLO 检测框画在前端。
+画面框选来源：页面里的框来自 `trash-object-yolo11n-det-expanded.onnx` 的运行时输出。该 detection 模型输入尺寸为 320，输出类别统一为 `trash_object`，业务含义是“散落物、堆放物、可见垃圾物体位置”。它不负责判断满/空/溢出；前端只把 NMS 后的坐标画出来。
 
 ## 边界
 
-当前页面已经展示 YOLO detection 的真实输出框，但检测框来自公开数据补充训练的 `trash_object` 模型，用于增强“散落垃圾物体检测”的可视化说服力。它还不是经过客户业务框标注训练出来的满/空/溢出专用 detection 或 segmentation 模型。
+当前页面已经展示目标检测模型的真实输出框，但检测框来自公开数据补充训练的 `trash_object` 模型，用于增强“散落垃圾物体检测”的可视化说服力。它还不是经过客户业务框标注训练出来的满/空/溢出专用 detection 或 segmentation 模型。
 
 如果需要正式交付“满溢区域 / 空桶 / 溢出 / 脏污区域”等业务框，需要对客户 RB 图补充框选或分割标注，并重新划分训练集、验证集和留出测试集后训练 YOLO detection/segmentation 模型。
 
 ## 公开数据补充训练
 
-已新增公开数据融合与 YOLO detection 模型，用于补充“散落垃圾物体检测”能力，不直接替代客户 RB 图训练出来的场景分类模型。
+已新增公开数据融合与目标检测模型，用于补充“散落垃圾物体检测”能力，不直接替代客户 RB 图训练出来的场景分类模型。公开数据图片只进入训练集，不在客户演示页面展示。
 
 已并入的数据：
 

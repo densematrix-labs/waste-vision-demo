@@ -709,8 +709,8 @@
           </div>
           <div class="panel-body">
             <div class="signal-list">
-              <div class="signal"><strong>状态判断</strong><b>YOLO11n</b><span>整图分类输出满溢、散落、脏污、正常</span></div>
-              <div class="signal"><strong>检测框</strong><b>YOLO11n</b><span>检测模型输出候选框，前端只负责按坐标绘制</span></div>
+              <div class="signal"><strong>分类结果</strong><b>客户图训练</b><span>YOLO11n 分类模型输出满溢、散落、脏污、正常</span></div>
+              <div class="signal"><strong>画面框选</strong><b>目标检测</b><span>检测模型输出散落物和堆放物位置，前端按坐标绘制</span></div>
               <div class="signal"><strong>运行方式</strong><b>本地推理</b><span>模型文件加载到浏览器后执行，显示实际耗时</span></div>
               <div class="signal"><strong>后处理</strong><b>NMS</b><span>过滤重叠候选框，保留高置信度结果</span></div>
             </div>
@@ -909,7 +909,7 @@
 
       async function loadYoloModel() {
         if (!window.ort) {
-          throw new Error("ONNX Runtime 未加载");
+          throw new Error("模型运行环境未加载");
         }
         ort.env.wasm.numThreads = 1;
         ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
@@ -918,7 +918,7 @@
           ort.InferenceSession.create(detectionModelUrl, { executionProviders: ["wasm"] })
         ]);
         modelReady = true;
-        modelStatus.textContent = "YOLO 本地推理已加载";
+        modelStatus.textContent = "模型已加载";
         await recognizeCurrentImage();
       }
 
@@ -1068,7 +1068,7 @@
           }
           boxes.push({
             label: "trash_object",
-            title: "YOLO 检测框",
+            title: "疑似散落/堆放物",
             score,
             x1,
             y1,
@@ -1146,21 +1146,21 @@
         const top = normalized[0];
         const event = eventCatalog[top.event];
         const confidence = `${Math.round(top.score * 100)}%`;
-        const detectSummary = `${detections.length} 个 YOLO 框 / ${Math.round(timing.total)} ms`;
+        const detectSummary = `${detections.length} 处目标 / ${Math.round(timing.total)} ms`;
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
-        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>YOLO detection：${detectSummary}</span><span>${event.action}</span>`;
+        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>画面目标检测：${detectSummary}</span><span>${event.action}</span>`;
         eventCount.textContent = `${detections.length} 框`;
         workOrderText.textContent = workOrderCopy[top.event];
         const detectionCard = `
           <article class="object-card">
             <div class="object-top">
               <div class="object-name">
-                <b>YOLO 检测框</b>
-                <span>trash_object detection · ${detections.length} 个框</span>
+                <b>散落/堆放物位置</b>
+                <span>检测到 ${detections.length} 处疑似目标</span>
               </div>
               <div class="confidence">${Math.round(timing.detect)} ms</div>
             </div>
-            <div class="reason">浏览器加载 YOLO11n 检测模型后，对当前画面执行本地推理；检测框为模型输出后经 NMS 过滤的结果，前端只负责按坐标绘制。</div>
+            <div class="reason">浏览器加载目标检测模型后，对当前画面执行本地推理；框选位置来自模型输出并经过重叠过滤，前端只负责按坐标绘制。</div>
             <div class="action-note">分类耗时 ${Math.round(timing.classify)} ms，检测耗时 ${Math.round(timing.detect)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
           </article>
         `;
