@@ -91,12 +91,12 @@ Roboflow overflow 数据需要 `ROBOFLOW_API_KEY` 或手动导出；Mendeley 数
 
 ## 现场画面
 
-页面使用 4 张代表性固定点位画面：
+页面展示的 4 张图全部来自客户提供的 RB 固定点位图片包，公开数据图片只用于训练检测能力，不进入客户 dashboard：
 
-- `customer-scenes/overflow-yard-pile.jpg`：满溢/堆积
-- `customer-scenes/overflow-bin-row.jpg`：桶口外溢
-- `customer-scenes/dirty-ground-scatter.jpg`：地面散落
-- `customer-scenes/bulky-waste-pile.jpg`：大件堆放
+- `customer-scenes/overflow-yard-pile.jpg`：满溢/堆积，来源 `GS3821437_0_20260626_045618.jpg`
+- `customer-scenes/overflow-bin-row.jpg`：桶口外溢，来源 `GS3821436_0_20260620_045443.jpg`
+- `customer-scenes/dirty-ground-scatter.jpg`：地面脏污，来源 `GT9455976_0_20260615_134504.jpg`
+- `customer-scenes/bulky-waste-pile.jpg`：袋装堆放，来源 `GS3821437_0_20260627_215529.jpg`
 
 ## 治理事件测试集
 

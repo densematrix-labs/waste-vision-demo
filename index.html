@@ -712,7 +712,7 @@
             <button id="showResult">区域识别效果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg" alt="现场案例：满溢/堆积" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-scenes-20260722" alt="现场案例：满溢/堆积" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
@@ -808,39 +808,42 @@
         normal: "当前点位未发现明显异常，建议保持常规巡检频次。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
+      const dashboardAssetVersion = "rb-scenes-20260722";
+      const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
+
       const customerSamples = [
         {
           title: "满溢/堆积",
           event: "overflow",
           status: "现场案例：满溢/堆积",
-          image: "./customer-scenes/overflow-yard-pile.jpg",
-          caption: "投放点周边出现大面积袋装垃圾堆积，系统可触发清运复核并提升处置优先级。"
+          image: withAssetVersion("./customer-scenes/overflow-yard-pile.jpg"),
+          caption: "固定点位画面中垃圾袋、纸箱和散落物集中堆在投放区，系统可触发清运复核并提升处置优先级。"
         },
         {
           title: "桶口外溢",
           event: "overflow",
           status: "现场案例：桶口外溢",
-          image: "./customer-scenes/overflow-bin-row.jpg",
-          caption: "多只垃圾桶已接近或超过容量上限，桶口和桶旁同步出现外溢垃圾。"
+          image: withAssetVersion("./customer-scenes/overflow-bin-row.jpg"),
+          caption: "厨余桶内垃圾接近容量上限，桶口周边已有落地物，适合触发容量和现场复核。"
         },
         {
-          title: "地面散落",
+          title: "地面脏污",
           event: "dirty",
-          status: "现场案例：地面散落",
-          image: "./customer-scenes/dirty-ground-scatter.jpg",
-          caption: "点位地面有零散垃圾、泥水和积水痕迹，系统可提示保洁复核并结合天气记录判断处置优先级。"
+          status: "现场案例：地面脏污",
+          image: withAssetVersion("./customer-scenes/dirty-ground-scatter.jpg"),
+          caption: "投放点前地面出现大面积水渍和污痕，系统可提示保洁复核并结合天气、清扫记录判断处置优先级。"
         },
         {
-          title: "大件堆放",
+          title: "袋装堆放",
           event: "litter",
-          status: "现场案例：大件堆放",
-          image: "./customer-scenes/bulky-waste-pile.jpg",
-          caption: "投放点旁堆放大件家具和混合废弃物，系统可识别为周边散落并提示现场复核。"
+          status: "现场案例：袋装堆放",
+          image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
+          caption: "投放点前出现袋装垃圾和纸盒堆放，系统可识别为周边散落/堆放并提示现场复核。"
         }
       ];
 
-      const classifierModelUrl = "./models/waste-yolo11n-cls.onnx";
-      const detectionModelUrl = "./models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.onnx";
+      const classifierModelUrl = withAssetVersion("./models/waste-yolo11n-cls.onnx");
+      const detectionModelUrl = withAssetVersion("./models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.onnx");
       const modelClasses = ["dirty", "litter", "normal", "overflow"];
       const detectionClasses = [
         { id: "waste_object", title: "可见垃圾物" },
