@@ -437,6 +437,33 @@
         background: var(--amber);
       }
 
+      .detection-box.scattered_litter {
+        border-color: #7dd3fc;
+        background: rgba(125, 211, 252, 0.09);
+      }
+
+      .detection-box.scattered_litter::before {
+        background: #7dd3fc;
+      }
+
+      .detection-box.pileup {
+        border-color: #fbbf24;
+        background: rgba(251, 191, 36, 0.1);
+      }
+
+      .detection-box.pileup::before {
+        background: #fbbf24;
+      }
+
+      .detection-box.dirty_ground {
+        border-color: #fb7185;
+        background: rgba(251, 113, 133, 0.1);
+      }
+
+      .detection-box.dirty_ground::before {
+        background: #fb7185;
+      }
+
       .image-caption {
         position: absolute;
         left: 12px;
@@ -709,10 +736,10 @@
           </div>
           <div class="panel-body">
             <div class="signal-list">
-              <div class="signal"><strong>分类结果</strong><b>客户图训练</b><span>YOLO11n 分类模型输出满溢、散落、脏污、正常</span></div>
-              <div class="signal"><strong>画面框选</strong><b>目标检测</b><span>检测模型输出散落物和堆放物位置，前端按坐标绘制</span></div>
+              <div class="signal"><strong>分类结果</strong><b>客户图训练</b><span>状态分类模型输出满溢、散落、脏污、正常</span></div>
+              <div class="signal"><strong>画面框选</strong><b>位置检测</b><span>检测模型输出垃圾物、散落物、堆放物和地面脏污位置</span></div>
               <div class="signal"><strong>运行方式</strong><b>本地推理</b><span>模型文件加载到浏览器后执行，显示实际耗时</span></div>
-              <div class="signal"><strong>后处理</strong><b>NMS</b><span>过滤重叠候选框，保留高置信度结果</span></div>
+              <div class="signal"><strong>结果整理</strong><b>重叠过滤</b><span>过滤重叠候选框，保留高置信度结果</span></div>
             </div>
           </div>
           <div class="panel-header">
@@ -813,11 +840,17 @@
       ];
 
       const classifierModelUrl = "./models/waste-yolo11n-cls.onnx";
-      const detectionModelUrl = "./models/public-detection-expanded/trash-object-yolo11n-det-expanded.onnx";
+      const detectionModelUrl = "./models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.onnx";
       const modelClasses = ["dirty", "litter", "normal", "overflow"];
+      const detectionClasses = [
+        { id: "waste_object", title: "可见垃圾物" },
+        { id: "scattered_litter", title: "散落物" },
+        { id: "pileup", title: "堆放物" },
+        { id: "dirty_ground", title: "地面脏污" }
+      ];
       const modelInputSize = 224;
       const detectionInputSize = 320;
-      const detectionConfidenceThreshold = 0.25;
+      const detectionConfidenceThreshold = 0.12;
       const detectionIouThreshold = 0.45;
       let currentMode = "result";
       let currentImage = {
@@ -1008,7 +1041,7 @@
           const current = sorted.shift();
           selected.push(current);
           for (let index = sorted.length - 1; index >= 0; index -= 1) {
-            if (iou(current, sorted[index]) > detectionIouThreshold) {
+            if (current.label === sorted[index].label && iou(current, sorted[index]) > detectionIouThreshold) {
               sorted.splice(index, 1);
             }
           }
@@ -1049,13 +1082,22 @@
         const data = tensorOutput.data;
         const dimensions = tensorOutput.dims;
         const rows = dimensions[2];
+        const classCount = Math.max(1, dimensions[1] - 4);
         const boxes = [];
         for (let index = 0; index < rows; index += 1) {
           const cx = data[index];
           const cy = data[rows + index];
           const width = data[rows * 2 + index];
           const height = data[rows * 3 + index];
-          const score = data[rows * 4 + index];
+          let score = -Infinity;
+          let classIndex = 0;
+          for (let candidate = 0; candidate < classCount; candidate += 1) {
+            const candidateScore = data[rows * (4 + candidate) + index];
+            if (candidateScore > score) {
+              score = candidateScore;
+              classIndex = candidate;
+            }
+          }
           if (score < detectionConfidenceThreshold || width <= 1 || height <= 1) {
             continue;
           }
@@ -1066,9 +1108,10 @@
           if (x2 - x1 < 4 || y2 - y1 < 4) {
             continue;
           }
+          const detectionClass = detectionClasses[classIndex] || detectionClasses[0];
           boxes.push({
-            label: "trash_object",
-            title: "疑似散落/堆放物",
+            label: detectionClass.id,
+            title: detectionClass.title,
             score,
             x1,
             y1,
@@ -1126,12 +1169,25 @@
           const label = `${box.title} ${Math.round(box.score * 100)}%`;
           return `
             <div
-              class="detection-box${box.score < 0.3 ? " low" : ""}"
+              class="detection-box ${escapeHtml(box.label)}${box.score < 0.3 ? " low" : ""}"
               data-label="${escapeHtml(label)}"
               style="left:${left}px;top:${top}px;width:${width}px;height:${height}px"
             ></div>
           `;
         }).join("");
+      }
+
+      function summarizeDetections(detections) {
+        if (!detections.length) {
+          return "未检出明显目标";
+        }
+        const counts = new Map();
+        detections.forEach((box) => {
+          counts.set(box.title, (counts.get(box.title) || 0) + 1);
+        });
+        return [...counts.entries()]
+          .map(([title, count]) => `${title} ${count} 处`)
+          .join("，");
       }
 
       function renderPrediction(predictions, detections, timing) {
@@ -1147,20 +1203,21 @@
         const event = eventCatalog[top.event];
         const confidence = `${Math.round(top.score * 100)}%`;
         const detectSummary = `${detections.length} 处目标 / ${Math.round(timing.total)} ms`;
+        const categorySummary = summarizeDetections(detections);
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
-        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>画面目标检测：${detectSummary}</span><span>${event.action}</span>`;
+        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>画面框选：${categorySummary} / ${Math.round(timing.total)} ms</span><span>${event.action}</span>`;
         eventCount.textContent = `${detections.length} 框`;
         workOrderText.textContent = workOrderCopy[top.event];
         const detectionCard = `
           <article class="object-card">
             <div class="object-top">
               <div class="object-name">
-                <b>散落/堆放物位置</b>
-                <span>检测到 ${detections.length} 处疑似目标</span>
+                <b>画面目标位置</b>
+                <span>${categorySummary}</span>
               </div>
               <div class="confidence">${Math.round(timing.detect)} ms</div>
             </div>
-            <div class="reason">浏览器加载目标检测模型后，对当前画面执行本地推理；框选位置来自模型输出并经过重叠过滤，前端只负责按坐标绘制。</div>
+            <div class="reason">浏览器加载位置检测模型后，对当前画面执行本地推理；框选位置来自模型输出并经过重叠过滤，前端只负责按坐标绘制。</div>
             <div class="action-note">分类耗时 ${Math.round(timing.classify)} ms，检测耗时 ${Math.round(timing.detect)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
           </article>
         `;

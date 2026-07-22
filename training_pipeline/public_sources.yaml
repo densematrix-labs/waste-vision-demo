@@ -23,50 +23,62 @@ datasets:
     annotations_url: https://raw.githubusercontent.com/pedropro/TACO/master/data/annotations.json
     url: https://github.com/pedropro/TACO
     status: direct annotation/image URL download
-    use: trash_object detection supplement for loose litter
+    use: maps to waste_object when enabled; disabled in the latest multiclass run because remote image download is slow
   mendeley_trash_detection:
     name: Mendeley Trash Detection Dataset
     url: https://data.mendeley.com/datasets/z732f9pwxt/1
     status: direct file URL unresolved from static page
-    use: trash_object detection supplement when downloadable archive URL is available
+    use: candidate waste_object/scattered_litter supplement when downloadable archive URL is available
   innovatiana_garbage_detection:
     name: Innovatiana Garbage Detection Dataset
     kaggle_slug: viswaprakash1990/garbage-detection
     url: https://www.kaggle.com/datasets/viswaprakash1990/garbage-detection
-    status: Kaggle download if credentials are present
-    use: trash_object detection supplement for waste-material boxes
+    status: included in multiclass run; 500 images selected from 10464 image/label pairs
+    use: maps all boxes to waste_object
   kaggle_garbage_classification_yolo:
     name: Garbage Classification Dataset
     kaggle_slug: arshnoor7389/garbage-classification-dataset
     url: https://www.kaggle.com/datasets/arshnoor7389/garbage-classification-dataset
     status: large archive verified reachable through KaggleHub; not included in current run because the archive is about 4 GB and needs schema inspection before mapping
-    use: candidate trash_object detection supplement if YOLO labels are clean after inspection
+    use: candidate waste_object/scattered_litter supplement if YOLO labels are clean after inspection
   kaggle_household_trash_recycling:
     name: Household Trash Recycling Dataset
     kaggle_slug: youssefelebiary/household-trash-recycling-dataset
     url: https://www.kaggle.com/datasets/youssefelebiary/household-trash-recycling-dataset
     status: candidate source from Kaggle search; requires download and schema inspection
-    use: candidate trash_object detection supplement for household waste boxes
+    use: candidate waste_object supplement for household waste boxes
   kaggle_trash_detection:
     name: Trash Detection
     kaggle_slug: alyyan/trash-detection
     url: https://www.kaggle.com/datasets/alyyan/trash-detection
-    status: candidate source from Kaggle search; requires download and schema inspection
-    use: candidate trash_object detection supplement for trash/dirt boxes
+    status: included in multiclass run; 900 images selected from 1537 image/label pairs
+    use: maps trash to scattered_litter; maps dirt/liquid/marks to dirty_ground
+  kaggle_visual_pollution_dhaka:
+    name: Visual Pollution Dhaka Streets
+    kaggle_slug: yearathossain/visual-pollution-dhaka-streets
+    url: https://www.kaggle.com/datasets/yearathossain/visual-pollution-dhaka-streets
+    status: included in multiclass run; 500 images selected from 800 relevant labels
+    use: maps streetLitters/streetLitters2 to scattered_litter; maps constructionMat/bricks/bricks2 to pileup; ignores billboard/wires/towers
+  kaggle_geo_waste_yolo:
+    name: Geo Waste annotated dataset for YOLO
+    kaggle_slug: hiteshkumargupta/geo-waste-annotated-dataset-for-yolo
+    url: https://www.kaggle.com/datasets/hiteshkumargupta/geo-waste-annotated-dataset-for-yolo
+    status: included in multiclass run; 500 images selected from 624 image/label pairs
+    use: maps all boxes to waste_object because downloaded archive does not include class-name metadata
   kaggle_waste_classification_yolov8:
     name: Waste Classification - YOLOv8 dataset
     kaggle_slug: spellsharp/garbage-data
     url: https://www.kaggle.com/datasets/spellsharp/garbage-data
     status: candidate source from Kaggle search; requires download and schema inspection
-    use: candidate trash_object detection supplement if classes map cleanly
+    use: candidate waste_object/scattered_litter supplement if classes map cleanly
   kaggle_trash_detection_image_dataset:
     name: Trash-detection image dataset
     kaggle_slug: ahnaftahmeed/trash-detection-image-dataset
     url: https://www.kaggle.com/datasets/ahnaftahmeed/trash-detection-image-dataset
     status: candidate source from Kaggle search; requires download and COCO/YOLO schema inspection
-    use: candidate trash_object detection supplement for street trash boxes
+    use: candidate waste_object/scattered_litter supplement for street trash boxes
   roboflow_yolov5_garbage_detection:
     name: Roboflow Yolov5 garbage detection
     url: https://universe.roboflow.com/garbage-detection-oa9nh/yolov5-garbage-detection
     status: requires Roboflow export/API key
-    use: candidate trash_object detection supplement; 5980-image Roboflow source
+    use: candidate waste_object/scattered_litter supplement; 5980-image Roboflow source

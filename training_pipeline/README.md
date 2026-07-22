@@ -6,7 +6,7 @@ This pipeline keeps public source images out of the GitHub Pages tree. It builds
 
 - Customer RB images remain the domain anchor for the scene classifier.
 - Roboflow overflow data is used only for `overflow` / `normal` scene-status expansion after export access is available.
-- TACO, Mendeley, and Innovatiana data are used only for object-level `trash_object` detection support.
+- Public detection data is mapped only into business-location classes: `waste_object`, `scattered_litter`, `pileup`, and `dirty_ground`.
 - Public source images are stored under ignored directories: `external_data/` and `public_yolo_dataset/`.
 
 ## Run
@@ -24,7 +24,46 @@ The script uses Docker, mounts Kaggle credentials read-only, builds `public_yolo
 - Roboflow `garbage-can-overflow` requires `ROBOFLOW_API_KEY` or manual export.
 - Mendeley `z732f9pwxt` is confirmed CC BY 4.0, but the static page does not expose a stable direct archive URL in this environment.
 
-## Current Baseline
+## Current Multiclass Baseline
+
+The current public detection baseline uses four classes:
+
+- `waste_object`: visible waste objects.
+- `scattered_litter`: loose scattered trash.
+- `pileup`: piled construction material, bricks, bulky waste, or stacked waste proxies.
+- `dirty_ground`: dirt, liquid, marks, or ground stain proxies.
+
+Included sources:
+
+- Innovatiana Garbage Detection: 500 images from 10,464 available pairs, mapped to `waste_object`.
+- Alyyan Trash Detection: 900 images from 1,537 available pairs; `trash` maps to `scattered_litter`, `dirt/liquid/marks` map to `dirty_ground`.
+- Visual Pollution Dhaka Streets: 500 relevant images; `streetLitters` maps to `scattered_litter`, `constructionMat/bricks` maps to `pileup`.
+- Geo Waste YOLO: 500 images from 624 available pairs, conservatively mapped to `waste_object` because the downloaded archive does not include class-name metadata.
+
+Combined YOLO dataset:
+
+- Train images: 1,920.
+- Validation images: 480.
+- Validation instances: 2,528.
+- Box counts: `waste_object` 4,739, `scattered_litter` 2,170, `pileup` 512, `dirty_ground` 3,906.
+
+One-epoch CPU baseline metrics:
+
+- Precision: 0.304.
+- Recall: 0.139.
+- mAP50: 0.100.
+- mAP50-95: 0.040.
+
+Multiclass artifacts:
+
+- `models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.pt`
+- `models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass.onnx`
+- `models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass-metrics.json`
+- `models/public-detection-multiclass/waste-scene-objects-yolo11n-det-multiclass-results.csv`
+
+This proves the multiclass detection pipeline and browser deployment path. It is still a baseline: customer-domain bbox or segmentation labels and longer GPU training are required before treating it as a robust production detector.
+
+## Previous Single-Class Baseline
 
 The expanded public detection baseline uses only object-level data sources:
 
@@ -62,4 +101,4 @@ Customer scene smoke test at confidence 0.15:
 - `customer-scenes/overflow-bin-row.jpg`: 3 detections
 - `customer-scenes/overflow-yard-pile.jpg`: 9 detections
 
-This is a trash-object detection supplement. It is not wired into the customer UI because the UI currently needs scene-level status, and overflow / empty / full still needs Roboflow export or customer box labels.
+This is a trash-object detection supplement. It has been superseded in the customer UI by the multiclass location detector above. Overflow / empty / full still needs Roboflow export or customer box labels.

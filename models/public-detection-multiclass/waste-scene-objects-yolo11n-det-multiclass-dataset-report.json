@@ -1,0 +1,71 @@
+{
+  "dataset": "public_business_detection_supplement",
+  "classes": [
+    "waste_object",
+    "scattered_litter",
+    "pileup",
+    "dirty_ground"
+  ],
+  "counts": {
+    "train": 1920,
+    "val": 480
+  },
+  "class_counts": {
+    "waste_object": 4739,
+    "scattered_litter": 2170,
+    "pileup": 512,
+    "dirty_ground": 3906
+  },
+  "sources": [
+    {
+      "source": "taco",
+      "attempted": 0,
+      "added": 0,
+      "status": "disabled"
+    },
+    {
+      "source": "innovatiana",
+      "available_pairs": 10464,
+      "added": 500,
+      "status": "ok"
+    },
+    {
+      "source": "alyyan_trash_detection",
+      "available_pairs": 1537,
+      "added": 900,
+      "status": "ok",
+      "class_mapping": {
+        "dirt": "dirty_ground",
+        "liquid": "dirty_ground",
+        "marks": "dirty_ground",
+        "trash": "scattered_litter"
+      }
+    },
+    {
+      "source": "visual_pollution_dhaka",
+      "available_relevant_labels": 800,
+      "skipped_missing_image": 0,
+      "added": 500,
+      "status": "ok",
+      "class_mapping": {
+        "streetLitters/streetLitters2": "scattered_litter",
+        "constructionMat/bricks/bricks2": "pileup",
+        "billboard/wires/towers": "ignored"
+      }
+    },
+    {
+      "source": "geo_waste_yolo",
+      "available_pairs": 624,
+      "added": 500,
+      "status": "ok",
+      "class_mapping": {
+        "all_source_classes": "waste_object"
+      },
+      "mapping_note": "Dataset does not include class-name metadata in the downloaded archive; all boxes are used only as generic waste objects."
+    }
+  ],
+  "blocked": {
+    "roboflow_overflow": "ROBOFLOW_API_KEY is not present; export URL requires key or manual download.",
+    "mendeley_trash_detection": "Static page does not expose stable direct file URL in this environment; keep as source candidate."
+  }
+}
