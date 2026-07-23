@@ -9,5 +9,5 @@ routes = [
 
 [vars]
 LLM_PROXY_BASE_URL = "https://llm-proxy.densematrix.ai"
-VLM_MODEL = "gemini-3.1-pro-preview"
+VLM_MODEL = "claude-opus-4.6"
 ALLOWED_ORIGINS = "https://densematrix-labs.github.io,http://localhost:8099,http://127.0.0.1:8099"
