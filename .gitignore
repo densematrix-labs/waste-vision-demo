@@ -10,3 +10,5 @@ train_model/work/
 garbage_status_mobilenet.pt
 train_model/models/garbage_status_mobilenet.pt
 trained-model-output.json
+node_modules/
+workers/vlm-proxy/node_modules/

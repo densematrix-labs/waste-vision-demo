@@ -437,24 +437,6 @@
         background: var(--amber);
       }
 
-      .detection-box.overflow_area {
-        border-color: #ff6b5f;
-        background: rgba(255, 107, 95, 0.1);
-      }
-
-      .detection-box.overflow_area::before {
-        background: #ff6b5f;
-      }
-
-      .detection-box.scattered_litter {
-        border-color: #7dd3fc;
-        background: rgba(125, 211, 252, 0.09);
-      }
-
-      .detection-box.scattered_litter::before {
-        background: #7dd3fc;
-      }
-
       .detection-box.pileup {
         border-color: #fbbf24;
         background: rgba(251, 191, 36, 0.1);
@@ -462,15 +444,6 @@
 
       .detection-box.pileup::before {
         background: #fbbf24;
-      }
-
-      .detection-box.dirty_ground {
-        border-color: #fb7185;
-        background: rgba(251, 113, 133, 0.1);
-      }
-
-      .detection-box.dirty_ground::before {
-        background: #fb7185;
       }
 
       .image-caption {
@@ -519,7 +492,7 @@
 
       .customer-gallery {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
         gap: 10px;
         padding: 0 14px 14px;
       }
@@ -646,7 +619,7 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检平台</h1>
-            <p class="subtitle">面向客户现有模型难以稳定判断的现场截图，完成异常识别、证据定位和处置建议。</p>
+            <p class="subtitle">面向固定投放点截图，识别桶旁垃圾堆放并输出现场说明；正常画面不触发工单。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
@@ -669,7 +642,7 @@
               <div class="upload">
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
-                  <b>选择一张疑难现场截图</b>
+                  <b>选择一张投放点截图</b>
                   <span>用于触发云端智能分析流程</span>
                 </div>
               </div>
@@ -678,7 +651,7 @@
             <div class="control-group">
               <label>点位数据</label>
               <div class="signal-list">
-                <div class="signal"><strong>桶内高度</strong><b>联动</b><span>辅助判断满溢风险</span></div>
+                <div class="signal"><strong>桶内高度</strong><b>联动</b><span>辅助判断是否需要清运复核</span></div>
                 <div class="signal"><strong>开盖记录</strong><b>联动</b><span>辅助判断投放频次</span></div>
                 <div class="signal"><strong>清运计划</strong><b>联动</b><span>辅助确定处置优先级</span></div>
                 <div class="signal"><strong>投放记录</strong><b>联动</b><span>辅助形成追溯闭环</span></div>
@@ -696,38 +669,35 @@
             </div>
 
             <div class="control-group">
-              <label>证据区域</label>
+              <label>识别边界</label>
               <div class="legend">
                 <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>关注区域：重点分析的投放点范围</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>地面警戒区：散落与脏污识别范围</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span>满溢热区：桶口和桶旁堆积风险</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>散落热区：袋装和零散垃圾落地区域</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span>脏污区域：油污、泥渍、积水和反光</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：未发现明显异常，保持例行巡检</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>堆放证据：桶旁成堆垃圾袋、纸箱或大件杂物</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：投放点周边无明显堆放，不触发工单</span></div>
               </div>
             </div>
 
-            <p class="footnote">系统围绕固定点位配置区域进行识别，减少道路、车辆、行人等非目标区域干扰。</p>
+            <p class="footnote">当前 demo 聚焦“桶旁/点位外垃圾堆放”能力：有堆放才画框，正常画面不画框也不派单。</p>
           </div>
         </section>
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">现场案例：满溢/堆积</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">堆放正例：桶旁堆放</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
             <button id="showRaw">基础画面</button>
-            <button id="showResult">异常识别结果</button>
+            <button id="showResult">堆放识别结果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-scenes-20260722" alt="现场案例：满溢/堆积" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724" alt="堆放正例：桶旁堆放" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
               <span>正在读取现场画面并判断异常事件。</span>
             </div>
-            <div class="image-caption" id="caption">桶旁堆积和外露垃圾集中在投放点附近，系统可触发清运复核并提升处置优先级。</div>
+            <div class="image-caption" id="caption">桶旁出现成堆垃圾袋和纸箱，系统识别为堆放风险并生成现场说明。</div>
           </div>
           <div class="customer-gallery" id="customerGallery"></div>
         </section>
@@ -745,8 +715,8 @@
           </div>
           <div class="panel-body">
             <div class="signal-list">
-              <div class="signal"><strong>图像理解</strong><b>云端分析</b><span>对客户疑难截图进行场景级异常判断</span></div>
-              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>输出满溢、散落、堆放、脏污等可复核区域</span></div>
+              <div class="signal"><strong>图像理解</strong><b>云端分析</b><span>判断投放点周边是否存在垃圾堆放</span></div>
+              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>只输出堆放区域；正常画面不画框</span></div>
               <div class="signal"><strong>规则约束</strong><b>点位数据</b><span>结合桶内高度、开盖记录和清运计划降低误报</span></div>
               <div class="signal"><strong>处置建议</strong><b>工单语言</b><span>把视觉判断转换为现场可执行的复核动作</span></div>
             </div>
@@ -755,7 +725,7 @@
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <p class="footnote" id="workOrderText">当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。</p>
+            <p class="footnote" id="workOrderText">当前点位建议进入“堆放复核”流程。系统可结合摄像头画面、清运计划和投放记录生成闭环工单。</p>
           </div>
         </section>
       </main>
@@ -783,132 +753,120 @@
       const customerGallery = document.getElementById("customerGallery");
 
       const eventCatalog = {
-        overflow: {
-          title: "满溢风险",
-          detail: "桶口外溢、桶旁堆积",
-          reason: "画面特征接近满溢和桶旁堆积场景，适合作为清运优先级判断依据。",
-          action: "建议进入清运复核队列，结合桶内高度和清运计划确定派单优先级。"
-        },
-        litter: {
-          title: "周边散落",
-          detail: "袋装垃圾、零散垃圾落地",
-          reason: "地面警戒区内存在明显落地物，适合作为保洁复核和现场处置判断依据。",
-          action: "建议进入保洁复核队列，结合点位时段和投放记录确认处置方式。"
-        },
-        dirty: {
-          title: "地面脏污",
-          detail: "油污、泥渍、积水和反光",
-          reason: "地面纹理和亮度变化接近脏污、积水或反光场景，需要结合天气和清扫记录复核。",
-          action: "建议作为保洁工单触发项，结合雨天、清扫记录和点位时段降低误报。"
+        pileup: {
+          title: "堆放风险",
+          detail: "桶旁成堆垃圾或纸箱堆放",
+          reason: "投放点周边存在成堆垃圾袋、纸箱或大件杂物，适合作为清运复核和现场处置依据。",
+          action: "建议进入堆放复核队列，结合清运计划和投放记录确定派单优先级。"
         },
         normal: {
-          title: "未发现明显异常",
+          title: "未发现堆放",
           detail: "投放点状态正常",
-          reason: "画面中未发现明显满溢、散落或脏污特征，适合作为例行巡检状态记录。",
+          reason: "投放点周边未发现成堆垃圾袋、纸箱或大件杂物，不应触发堆放类工单。",
           action: "建议保持常规巡检频次，结合桶内高度和清运计划持续观察。"
         }
       };
 
       const workOrderCopy = {
-        overflow: "当前点位建议进入“清运复核”流程。系统可结合摄像头画面、桶内高度、开盖记录、清运计划和投放记录生成闭环工单。",
-        litter: "当前点位建议进入“保洁复核”流程。系统可结合点位时段、投放记录和现场画面确认是否需要即时清理。",
-        dirty: "当前点位建议进入“地面清洁复核”流程。系统可结合天气、清扫记录和现场画面判断是否生成保洁工单。",
-        normal: "当前点位未发现明显异常，建议保持常规巡检频次。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
+        pileup: "当前点位建议进入“堆放复核”流程。系统可结合摄像头画面、清运计划和投放记录生成闭环工单。",
+        normal: "当前点位未发现堆放风险，不生成堆放类工单。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
-      const dashboardAssetVersion = "rb-scenes-20260722";
+      const dashboardAssetVersion = "rb-pileup-20260724";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const pageParams = new URLSearchParams(window.location.search);
-      const vlmApiUrl = window.WASTE_VISION_VLM_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
+      const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
       const offlinePreviewEnabled = pageParams.get("offline") === "1";
 
       const customerSamples = [
         {
-          title: "满溢/堆积",
-          event: "overflow",
-          status: "现场案例：满溢/堆积",
+          title: "堆放正例 1",
+          event: "pileup",
+          status: "堆放正例：桶旁堆放",
           image: withAssetVersion("./customer-scenes/overflow-yard-pile.jpg"),
-          caption: "固定点位画面中垃圾袋、纸箱和散落物集中堆在投放区，系统可触发清运复核并提升处置优先级。"
+          caption: "桶旁出现成堆垃圾袋和纸箱，系统识别为堆放风险并生成现场说明。"
         },
         {
-          title: "桶口外溢",
-          event: "overflow",
-          status: "现场案例：桶口外溢",
-          image: withAssetVersion("./customer-scenes/overflow-bin-row.jpg"),
-          caption: "厨余桶内垃圾接近容量上限，桶口周边已有落地物，适合触发容量和现场复核。"
-        },
-        {
-          title: "地面脏污",
-          event: "dirty",
-          status: "现场案例：地面脏污",
-          image: withAssetVersion("./customer-scenes/dirty-ground-scatter.jpg"),
-          caption: "投放点前地面出现大面积水渍和污痕，系统可提示保洁复核并结合天气、清扫记录判断处置优先级。"
-        },
-        {
-          title: "袋装堆放",
-          event: "litter",
-          status: "现场案例：袋装堆放",
+          title: "堆放正例 2",
+          event: "pileup",
+          status: "堆放正例：袋装堆放",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
-          caption: "投放点前出现袋装垃圾和纸盒堆放，系统可识别为周边散落/堆放并提示现场复核。"
+          caption: "投放点前出现大袋垃圾和纸盒集中堆放，系统识别为堆放风险。"
+        },
+        {
+          title: "正常反例 1",
+          event: "normal",
+          status: "正常反例：投放点清空",
+          image: withAssetVersion("./customer-scenes/normal-site.jpg"),
+          caption: "投放点周边没有成堆垃圾袋或纸箱，系统应保持正常状态，不触发堆放工单。"
+        },
+        {
+          title: "正常反例 2",
+          event: "normal",
+          status: "正常反例：地面清空",
+          image: withAssetVersion("./customer-scenes/normal-clean-01.jpg"),
+          caption: "固定机位显示投放点周边无明显堆放，系统应输出未发现堆放。"
+        },
+        {
+          title: "正常反例 3",
+          event: "normal",
+          status: "正常反例：道路侧清空",
+          image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
+          caption: "道路和投放点周边没有成堆垃圾，系统应避免误报。"
         }
       ];
 
       const vlmAnalyses = [
         {
           predictions: [
-            { event: "overflow", score: 0.88 },
-            { event: "litter", score: 0.74 },
-            { event: "dirty", score: 0.22 }
+            { event: "pileup", score: 0.92 },
+            { event: "normal", score: 0.08 }
           ],
           regions: [
-            { label: "overflow_area", title: "满溢证据", score: 0.84, x1: 270, y1: 150, x2: 560, y2: 355 },
-            { label: "pileup", title: "堆放证据", score: 0.78, x1: 210, y1: 190, x2: 610, y2: 390 }
+            { label: "pileup", title: "堆放证据", score: 0.92, x1: 40, y1: 115, x2: 310, y2: 420 }
           ],
-          rationale: "桶旁大面积袋装物和纸箱堆积，超过单次正常投放规模，和清运复核场景高度一致。"
+          rationale: "桶旁大面积袋装物和纸箱集中堆放，超过单次正常投放规模，适合触发堆放复核。"
         },
         {
           predictions: [
-            { event: "overflow", score: 0.82 },
-            { event: "litter", score: 0.66 },
-            { event: "dirty", score: 0.19 }
+            { event: "pileup", score: 0.9 },
+            { event: "normal", score: 0.1 }
           ],
           regions: [
-            { label: "overflow_area", title: "满溢证据", score: 0.82, x1: 90, y1: 115, x2: 685, y2: 370 },
-            { label: "scattered_litter", title: "散落证据", score: 0.66, x1: 160, y1: 250, x2: 610, y2: 410 }
+            { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 365, y2: 375 }
           ],
-          rationale: "桶口周边出现明显外露和落地物，结合固定点位区域可判断为疑似满溢。"
+          rationale: "投放点前有大袋垃圾和纸盒集中堆放，已经影响点位周边整洁度，建议复核。"
         },
         {
           predictions: [
-            { event: "dirty", score: 0.79 },
-            { event: "litter", score: 0.57 },
-            { event: "overflow", score: 0.18 }
+            { event: "normal", score: 0.94 },
+            { event: "pileup", score: 0.06 }
           ],
-          regions: [
-            { label: "dirty_ground", title: "脏污证据", score: 0.79, x1: 130, y1: 210, x2: 720, y2: 420 },
-            { label: "scattered_litter", title: "散落证据", score: 0.57, x1: 240, y1: 170, x2: 620, y2: 350 }
-          ],
-          rationale: "地面存在连续水渍、污痕和散落物，适合触发保洁复核而不是只做垃圾物体检测。"
+          regions: [],
+          rationale: "投放点周边没有成堆垃圾袋、纸箱或大件杂物，画面应保持正常状态。"
         },
         {
           predictions: [
-            { event: "litter", score: 0.83 },
-            { event: "overflow", score: 0.61 },
-            { event: "dirty", score: 0.2 }
+            { event: "normal", score: 0.95 },
+            { event: "pileup", score: 0.05 }
           ],
-          regions: [
-            { label: "pileup", title: "堆放证据", score: 0.83, x1: 220, y1: 145, x2: 650, y2: 390 },
-            { label: "scattered_litter", title: "散落证据", score: 0.72, x1: 80, y1: 190, x2: 690, y2: 410 }
+          regions: [],
+          rationale: "投放点周边为空，地面虽有阴影和轻微痕迹，但没有达到垃圾堆放定义。"
+        },
+        {
+          predictions: [
+            { event: "normal", score: 0.95 },
+            { event: "pileup", score: 0.05 }
           ],
-          rationale: "画面中袋装垃圾和纸盒集中堆放在投放点前侧，需要作为周边散落或临时堆放事件处理。"
+          regions: [],
+          rationale: "画面中没有成堆垃圾袋、纸箱或大件杂物，不应输出堆放框。"
         }
       ];
 
       const offlineUploadedImageAnalysis = {
         predictions: [
-          { event: "litter", score: 0.62 },
-          { event: "overflow", score: 0.49 },
-          { event: "dirty", score: 0.34 }
+          { event: "normal", score: 0.55 },
+          { event: "pileup", score: 0.45 }
         ],
         regions: [],
         rationale: "上传图片需要云端接口返回后生成证据区域；当前静态页面先展示结构化分析流程。"
@@ -1059,14 +1017,15 @@
           regions: regions
             .filter((box) => box && Number.isFinite(Number(box.x1)) && Number.isFinite(Number(box.y1)) && Number.isFinite(Number(box.x2)) && Number.isFinite(Number(box.y2)))
             .map((box) => ({
-              label: String(box.label || "scattered_litter"),
-              title: String(box.title || "证据区域"),
+              label: String(box.label || "pileup"),
+              title: String(box.title || "堆放证据"),
               score: Number.isFinite(Number(box.score)) ? Number(box.score) : 0.5,
               x1: Number(box.x1),
               y1: Number(box.y1),
               x2: Number(box.x2),
               y2: Number(box.y2)
-            })),
+            }))
+            .filter((box) => box.label === "pileup"),
           rationale: String(payload?.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
           model: String(payload?.model || "云端模型")
         };
@@ -1074,7 +1033,7 @@
 
       async function requestVlmAnalysis(image, imageUrl) {
         const imageDataUrl = imageUrl ? await imageToDataUrl(imageUrl) : await blobToDataUrl(await fetch(image.src).then((response) => response.blob()));
-        const response = await fetch(vlmApiUrl, {
+        const response = await fetch(analysisApiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1134,7 +1093,7 @@
       function renderDetections(image, detections) {
         lastDetections = detections;
         detectionImageUrl = currentImage.url;
-        boxCount.textContent = detections.length ? `${detections.length} 处` : "待返回";
+        boxCount.textContent = detections.length ? `${detections.length} 处` : "0 处";
         if (currentMode === "raw") {
           detectionLayer.innerHTML = "";
           return;
@@ -1237,6 +1196,7 @@
           await new Promise((resolve) => window.setTimeout(resolve, 80));
         }
         const groundedAt = performance.now();
+        const modelSuffix = analysis.model ? `（${analysis.model}）` : "";
         return {
           predictions: analysis.predictions,
           detections: analysis.regions,
@@ -1244,7 +1204,7 @@
             understanding: understoodAt - start,
             grounding: groundedAt - understoodAt,
             total: groundedAt - start,
-            rationale: `${analysis.rationale}（${analysis.model}）`
+            rationale: `${analysis.rationale}${modelSuffix}`
           }
         };
       }
