@@ -4,6 +4,8 @@ const REGION_VALUES = new Set(["pileup"]);
 const REGION_TITLES = {
   pileup: "堆放证据"
 };
+const MIN_REGION_SCORE = 0.82;
+const MIN_REGION_AREA_RATIO = 0.02;
 
 function jsonResponse(payload, status = 200, origin = "*") {
   return new Response(JSON.stringify(payload), {
@@ -58,6 +60,13 @@ function normalizeRegion(item, width, height) {
   };
 }
 
+function isHighQualityRegion(region, width, height) {
+  const boxWidth = Math.max(0, region.x2 - region.x1);
+  const boxHeight = Math.max(0, region.y2 - region.y1);
+  const areaRatio = (boxWidth * boxHeight) / Math.max(1, width * height);
+  return region.score >= MIN_REGION_SCORE && areaRatio >= MIN_REGION_AREA_RATIO;
+}
+
 function extractJson(text) {
   const trimmed = String(text || "").trim();
   if (!trimmed) throw new Error("empty model response");
@@ -96,6 +105,7 @@ function buildPrompt(width, height, context) {
     "如果判断为 pileup，输出所有主要且彼此分离的堆放证据区域：每个区域只框一个堆放主体或堆放团块，避免重复框同一堆。",
     "证据区域必须紧贴垃圾袋、纸箱、泡沫箱或大件杂物本体；不要框整片地面，不要框垃圾桶本体，不要框道路、墙面、阴影、污渍或背景。",
     "如果多个堆放物彼此接触或明显属于同一堆，合并成一个紧凑框；如果相隔较远，分成多个框。",
+    "多个框只在每个区域都能独立触发堆放复核时输出；不确定、低置信、太小或只是孤立纸片、展开纸板、包装印刷的区域不要输出。",
     "不要为了显得全面而扩大框；宁可少框，也不要把非垃圾区域框进去。",
     "请输出一小段适合给客户看的现场说明，说明为什么触发或不触发堆放工单。",
     "现场说明只使用“桶外堆放”“投放点周边堆放”“未发现堆放”等业务语言，不要使用满溢、散落、脏污等其他类别词。",
@@ -107,7 +117,7 @@ function buildPrompt(width, height, context) {
     "证据区域 label 只能使用 pileup。",
     "如果没有明确证据区域，regions 返回空数组，不要编造坐标。",
     "输出格式：",
-    '{"predictions":[{"event":"pileup","score":0.88},{"event":"normal","score":0.12}],"regions":[{"label":"pileup","score":0.84,"x1":120,"y1":280,"x2":360,"y2":760},{"label":"pileup","score":0.72,"x1":500,"y1":320,"x2":650,"y2":700}],"rationale":"一句话说明核心视觉依据"}',
+    '{"predictions":[{"event":"pileup","score":0.88},{"event":"normal","score":0.12}],"regions":[{"label":"pileup","score":0.9,"x1":120,"y1":280,"x2":360,"y2":760},{"label":"pileup","score":0.86,"x1":500,"y1":320,"x2":650,"y2":700}],"rationale":"一句话说明核心视觉依据"}',
     `现场上下文：${JSON.stringify(context || {})}`
   ].join("\n");
 }
@@ -151,7 +161,10 @@ async function callVlm(env, body) {
     .sort((a, b) => b.score - a.score);
   const topEvent = predictions[0]?.event || "normal";
   const regions = topEvent === "pileup"
-    ? (Array.isArray(parsed.regions) ? parsed.regions : []).map((item) => normalizeRegion(item, width, height)).slice(0, 6)
+    ? (Array.isArray(parsed.regions) ? parsed.regions : [])
+        .map((item) => normalizeRegion(item, width, height))
+        .filter((region) => isHighQualityRegion(region, width, height))
+        .slice(0, 6)
     : [];
   return {
     predictions,

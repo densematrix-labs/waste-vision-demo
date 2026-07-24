@@ -683,7 +683,7 @@
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">堆放正例：桶旁堆放</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">堆放告警画面 1</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
@@ -691,7 +691,7 @@
             <button id="showResult">堆放识别结果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724" alt="堆放正例：桶旁堆放" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724" alt="堆放告警画面 1" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
@@ -777,42 +777,43 @@
       const pageParams = new URLSearchParams(window.location.search);
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
       const offlinePreviewEnabled = pageParams.get("offline") === "1";
+      const minimumDisplayRegionScore = 0.82;
 
       const customerSamples = [
         {
-          title: "堆放正例 1",
+          title: "告警画面 1",
           event: "pileup",
-          status: "堆放正例：桶旁堆放",
+          status: "堆放告警画面 1",
           image: withAssetVersion("./customer-scenes/overflow-yard-pile.jpg"),
           caption: "桶旁出现成堆垃圾袋和纸箱，系统识别为堆放风险并生成现场说明。"
         },
         {
-          title: "堆放正例 2",
+          title: "告警画面 2",
           event: "pileup",
-          status: "堆放正例：袋装堆放",
+          status: "堆放告警画面 2",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
           caption: "投放点前出现大袋垃圾和纸盒集中堆放，系统识别为堆放风险。"
         },
         {
-          title: "正常反例 1",
+          title: "正常画面 1",
           event: "normal",
-          status: "正常反例：投放点清空",
+          status: "正常巡检画面 1",
           image: withAssetVersion("./customer-scenes/normal-site.jpg"),
-          caption: "投放点周边没有成堆垃圾袋或纸箱，系统应保持正常状态，不触发堆放工单。"
+          caption: "投放点周边没有成堆垃圾袋或纸箱，系统保持正常状态，不触发堆放工单。"
         },
         {
-          title: "正常反例 2",
+          title: "正常画面 2",
           event: "normal",
-          status: "正常反例：地面清空",
+          status: "正常巡检画面 2",
           image: withAssetVersion("./customer-scenes/normal-clean-01.jpg"),
-          caption: "固定机位显示投放点周边无明显堆放，系统应输出未发现堆放。"
+          caption: "固定机位显示投放点周边无明显堆放，系统输出未发现堆放。"
         },
         {
-          title: "正常反例 3",
+          title: "正常画面 3",
           event: "normal",
-          status: "正常反例：道路侧清空",
+          status: "正常巡检画面 3",
           image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
-          caption: "道路和投放点周边没有成堆垃圾，系统应避免误报。"
+          caption: "道路和投放点周边没有成堆垃圾，系统保持正常巡检状态。"
         }
       ];
 
@@ -824,7 +825,7 @@
           ],
           regions: [
             { label: "pileup", title: "堆放证据", score: 0.92, x1: 40, y1: 115, x2: 235, y2: 420 },
-            { label: "pileup", title: "堆放证据", score: 0.78, x1: 215, y1: 190, x2: 350, y2: 370 }
+            { label: "pileup", title: "堆放证据", score: 0.86, x1: 235, y1: 220, x2: 345, y2: 360 }
           ],
           rationale: "桶旁大面积袋装物和纸箱集中堆放，超过单次正常投放规模，适合触发堆放复核。"
         },
@@ -834,8 +835,7 @@
             { event: "normal", score: 0.1 }
           ],
           regions: [
-            { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 300, y2: 375 },
-            { label: "pileup", title: "堆放证据", score: 0.74, x1: 300, y1: 205, x2: 410, y2: 350 }
+            { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 300, y2: 375 }
           ],
           rationale: "投放点前有大袋垃圾和纸盒集中堆放，已经影响点位周边整洁度，建议复核。"
         },
@@ -1009,6 +1009,12 @@
       function normalizeVlmAnalysis(payload) {
         const predictions = Array.isArray(payload?.predictions) ? payload.predictions : [];
         const regions = Array.isArray(payload?.regions) ? payload.regions : [];
+        const topEvent = predictions
+          .map((item) => ({
+            event: eventCatalog[item.event] ? item.event : "normal",
+            score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0.01
+          }))
+          .sort((a, b) => b.score - a.score)[0]?.event || "normal";
         return {
           predictions: predictions
             .map((item) => ({
@@ -1027,7 +1033,7 @@
               x2: Number(box.x2),
               y2: Number(box.y2)
             }))
-            .filter((box) => box.label === "pileup"),
+            .filter((box) => topEvent === "pileup" && box.label === "pileup" && box.score >= minimumDisplayRegionScore && box.x2 > box.x1 && box.y2 > box.y1),
           rationale: String(payload?.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
           model: String(payload?.model || "云端模型")
         };
