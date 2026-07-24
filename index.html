@@ -646,12 +646,12 @@
         <div class="header-inner">
           <div>
             <h1>垃圾投放点智能巡检平台</h1>
-            <p class="subtitle">面向客户现有模型难以稳定判断的现场截图，使用视觉大模型完成异常识别、证据定位和处置建议。</p>
+            <p class="subtitle">面向客户现有模型难以稳定判断的现场截图，完成异常识别、证据定位和处置建议。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
             <span class="chip">引擎 <strong id="modelStatus">连接中</strong></span>
-            <span class="chip">研判 <strong id="inferenceTime">--</strong></span>
+            <span class="chip">分析 <strong id="inferenceTime">--</strong></span>
             <span class="chip">证据 <strong id="boxCount">--</strong></span>
             <span class="chip">信号 <strong>现场接入</strong></span>
           </div>
@@ -670,7 +670,7 @@
                 <input id="fileInput" type="file" accept="image/*" />
                 <div>
                   <b>选择一张疑难现场截图</b>
-                  <span>用于触发视觉大模型研判流程</span>
+                  <span>用于触发云端智能分析流程</span>
                 </div>
               </div>
             </div>
@@ -686,7 +686,7 @@
             </div>
 
             <div class="control-group">
-              <button class="primary" id="resultButton">查看 VLM 研判结果</button>
+              <button class="primary" id="resultButton">查看智能分析结果</button>
               <button class="secondary" id="rawButton">查看基础画面</button>
             </div>
 
@@ -718,7 +718,7 @@
           </div>
           <div class="image-tabs">
             <button id="showRaw">基础画面</button>
-            <button id="showResult">VLM研判结果</button>
+            <button id="showResult">异常识别结果</button>
           </div>
           <div class="image-shell">
             <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-scenes-20260722" alt="现场案例：满溢/堆积" />
@@ -741,11 +741,11 @@
             <div class="results" id="results"></div>
           </div>
           <div class="panel-header">
-            <h2 class="panel-title">VLM链路</h2>
+            <h2 class="panel-title">分析链路</h2>
           </div>
           <div class="panel-body">
             <div class="signal-list">
-              <div class="signal"><strong>图像理解</strong><b>视觉大模型</b><span>对客户疑难截图进行场景级异常判断</span></div>
+              <div class="signal"><strong>图像理解</strong><b>云端分析</b><span>对客户疑难截图进行场景级异常判断</span></div>
               <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>输出满溢、散落、堆放、脏污等可复核区域</span></div>
               <div class="signal"><strong>规则约束</strong><b>点位数据</b><span>结合桶内高度、开盖记录和清运计划降低误报</span></div>
               <div class="signal"><strong>处置建议</strong><b>工单语言</b><span>把视觉判断转换为现场可执行的复核动作</span></div>
@@ -911,7 +911,7 @@
           { event: "dirty", score: 0.34 }
         ],
         regions: [],
-        rationale: "上传图片需要云端 VLM 接口返回后生成精确证据区域；当前静态页面先展示结构化研判流程。"
+        rationale: "上传图片需要云端接口返回后生成证据区域；当前静态页面先展示结构化分析流程。"
       };
       let currentMode = "result";
       let currentImage = {
@@ -924,8 +924,10 @@
       let modelReadyPromise;
       let lastPredictions = [];
       let lastDetections = [];
+      let detectionImageUrl = currentImage.url;
+      let analysisRunId = 0;
 
-      function setMode(mode) {
+      function setMode(mode, options = {}) {
         currentMode = mode;
         showRaw.classList.toggle("active", mode === "raw");
         showResult.classList.toggle("active", mode === "result");
@@ -939,7 +941,7 @@
         }
         caption.textContent = currentImage.caption;
         stageStatus.textContent = currentImage.title;
-        recognizeCurrentImage();
+        recognizeCurrentImage(options.runId);
       }
 
       function setActiveSample(index) {
@@ -956,6 +958,7 @@
 
       function showCustomerSample(index) {
         const sample = customerSamples[index];
+        const runId = beginNewAnalysis(sample.status, sample.caption);
         currentImage = {
           url: sample.image,
           title: sample.status,
@@ -968,7 +971,7 @@
         stageStatus.textContent = sample.status;
         setActiveSample(index);
         setActiveGallery(index);
-        setMode("result");
+        setMode("result", { runId });
       }
 
       function loadImage(url) {
@@ -981,16 +984,32 @@
         });
       }
 
-      function setLoadingState(message = "正在读取现场画面并进行 VLM 研判。") {
-        analysisOverlay.innerHTML = `<b>研判中</b><span>${message}</span>`;
-        eventCount.textContent = "研判中";
+      function beginNewAnalysis(title, captionText) {
+        analysisRunId += 1;
+        lastPredictions = [];
+        lastDetections = [];
+        detectionImageUrl = "";
+        detectionLayer.innerHTML = "";
+        results.innerHTML = "";
+        workOrderText.textContent = "正在读取现场画面，完成后将生成可复核的处置建议。";
+        boxCount.textContent = "--";
+        inferenceTime.textContent = "--";
+        eventCount.textContent = "分析中";
+        caption.textContent = captionText;
+        stageStatus.textContent = title;
+        return analysisRunId;
+      }
+
+      function setLoadingState(message = "正在读取现场画面并进行智能分析。") {
+        analysisOverlay.innerHTML = `<b>分析中</b><span>${message}</span>`;
+        eventCount.textContent = "分析中";
         inferenceTime.textContent = "--";
         boxCount.textContent = "--";
         detectionLayer.innerHTML = "";
       }
 
       function setErrorState(message) {
-        analysisOverlay.innerHTML = `<b>VLM研判不可用</b><span>${message}</span>`;
+        analysisOverlay.innerHTML = `<b>智能分析不可用</b><span>${message}</span>`;
         eventCount.textContent = "异常";
         inferenceTime.textContent = "--";
         boxCount.textContent = "--";
@@ -1004,7 +1023,7 @@
           await new Promise((resolve) => window.setTimeout(resolve, 160));
           modelStatus.textContent = "离线预览";
         } else {
-          modelStatus.textContent = "VLM在线";
+          modelStatus.textContent = "在线";
         }
         modelReady = true;
         await recognizeCurrentImage();
@@ -1048,8 +1067,8 @@
               x2: Number(box.x2),
               y2: Number(box.y2)
             })),
-          rationale: String(payload?.rationale || "视觉大模型已完成画面理解，并生成结构化研判结果。"),
-          model: String(payload?.model || "VLM")
+          rationale: String(payload?.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
+          model: String(payload?.model || "云端模型")
         };
       }
 
@@ -1076,7 +1095,7 @@
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(payload.error || `VLM 服务返回 ${response.status}`);
+          throw new Error(payload.error || `智能分析服务返回 ${response.status}`);
         }
         return normalizeVlmAnalysis(payload);
       }
@@ -1114,6 +1133,7 @@
 
       function renderDetections(image, detections) {
         lastDetections = detections;
+        detectionImageUrl = currentImage.url;
         boxCount.textContent = detections.length ? `${detections.length} 处` : "待返回";
         if (currentMode === "raw") {
           detectionLayer.innerHTML = "";
@@ -1170,7 +1190,7 @@
           <article class="object-card">
             <div class="object-top">
               <div class="object-name">
-                <b>VLM证据区域</b>
+                <b>证据区域</b>
                 <span>${categorySummary}</span>
               </div>
               <div class="confidence">${Math.round(timing.grounding)} ms</div>
@@ -1201,7 +1221,7 @@
         if (!modelReadyPromise) {
           modelReadyPromise = loadVlmAnalyzer().catch((error) => {
             modelStatus.textContent = "不可用";
-            setErrorState(error.message || "VLM研判链路无法读取。");
+            setErrorState(error.message || "智能分析链路无法读取。");
             throw error;
           });
         }
@@ -1229,17 +1249,24 @@
         };
       }
 
-      async function recognizeCurrentImage() {
+      async function recognizeCurrentImage(runId = analysisRunId) {
         if (currentMode !== "result") return;
+        if (!runId) {
+          runId = beginNewAnalysis(currentImage.title, currentImage.caption);
+        }
         analysisOverlay.classList.remove("hidden");
         setLoadingState();
+        const imageUrlAtStart = currentImage.url;
         try {
           const image = await loadImage(currentImage.url);
+          if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url) return;
           imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
           const result = await recognizeImageElement(image);
+          if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url) return;
           renderDetections(sceneImage.naturalWidth ? sceneImage : image, result.detections);
           renderPrediction(result.predictions, result.detections, result.timing);
         } catch (error) {
+          if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url) return;
           setErrorState(error.message || "现场画面无法识别。");
         }
       }
@@ -1263,7 +1290,7 @@
       setActiveSample(0);
       sceneImage.addEventListener("load", () => {
         imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
-        if (currentMode === "result" && lastDetections.length) {
+        if (currentMode === "result" && lastDetections.length && detectionImageUrl === currentImage.url) {
           renderDetections(sceneImage, lastDetections);
         }
       });
@@ -1280,20 +1307,24 @@
         const file = event.target.files?.[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
+        const runId = beginNewAnalysis("现场截图", "系统已提交现场截图分析，右侧将显示结构化判断和处置建议。");
         sceneImage.onload = async () => {
           imageSize.textContent = `${sceneImage.naturalWidth} × ${sceneImage.naturalHeight}`;
           try {
+            if (runId !== analysisRunId || currentImage.url !== url) return;
             const result = await recognizeImageElement(sceneImage);
+            if (runId !== analysisRunId || currentImage.url !== url) return;
             renderDetections(sceneImage, result.detections);
             renderPrediction(result.predictions, result.detections, result.timing);
           } catch (error) {
+            if (runId !== analysisRunId || currentImage.url !== url) return;
             setErrorState(error.message || "现场截图无法识别。");
           }
         };
         currentImage = {
           url,
           title: "现场截图",
-          caption: "系统已提交现场截图研判，右侧为 VLM 结构化判断和处置建议。",
+          caption: "系统已提交现场截图分析，右侧将显示结构化判断和处置建议。",
           sampleIndex: null
         };
         sceneImage.src = url;
@@ -1309,13 +1340,13 @@
         setLoadingState();
       });
 
-      setLoadingState("正在准备视觉大模型研判链路。");
+      setLoadingState("正在准备智能分析链路。");
       modelReadyPromise = loadVlmAnalyzer().catch((error) => {
         modelStatus.textContent = "不可用";
-        setErrorState(error.message || "VLM研判链路无法读取。");
+        setErrorState(error.message || "智能分析链路无法读取。");
       });
       window.addEventListener("resize", () => {
-        if (currentMode === "result" && lastDetections.length) {
+        if (currentMode === "result" && lastDetections.length && detectionImageUrl === currentImage.url) {
           renderDetections(sceneImage, lastDetections);
         }
       });
