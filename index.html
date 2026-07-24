@@ -557,12 +557,6 @@
         font-size: 12px;
       }
 
-      .confidence {
-        color: var(--lime);
-        font-weight: 800;
-        font-size: 13px;
-      }
-
       .action-note {
         margin-top: 8px;
         padding: 8px;
@@ -754,8 +748,8 @@
 
       const eventCatalog = {
         pileup: {
-          title: "堆放风险",
-          detail: "桶旁成堆垃圾或纸箱堆放",
+          title: "发现桶外堆放",
+          detail: "投放点周边存在成堆垃圾",
           reason: "投放点周边存在成堆垃圾袋、纸箱或大件杂物，适合作为清运复核和现场处置依据。",
           action: "建议进入堆放复核队列，结合清运计划和投放记录确定派单优先级。"
         },
@@ -1112,7 +1106,7 @@
           const top = display.top + box.y1 * display.scale;
           const width = (box.x2 - box.x1) * display.scale;
           const height = (box.y2 - box.y1) * display.scale;
-          const label = `${box.title} ${Math.round(box.score * 100)}%`;
+          const label = box.title;
           return `
             <div
               class="detection-box ${escapeHtml(box.label)}${box.score < 0.3 ? " low" : ""}"
@@ -1147,41 +1141,24 @@
         lastPredictions = normalized;
         const top = normalized[0];
         const event = eventCatalog[top.event];
-        const confidence = `${Math.round(top.score * 100)}%`;
         const categorySummary = summarizeDetections(detections);
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
-        analysisOverlay.innerHTML = `<b>${event.title} ${confidence}</b><span>${event.detail}</span><span>证据区域：${categorySummary} / ${Math.round(timing.total)} ms</span><span>${event.action}</span>`;
-        eventCount.textContent = detections.length ? `${detections.length} 处证据` : "云端复核";
+        analysisOverlay.innerHTML = `<b>${event.title}</b><span>${event.detail}</span><span>证据区域：${categorySummary}</span><span>${event.action}</span>`;
+        eventCount.textContent = top.event === "pileup" ? "发现堆放" : "未发现堆放";
         workOrderText.textContent = workOrderCopy[top.event];
-        const detectionCard = `
+        const summaryCard = `
           <article class="object-card">
             <div class="object-top">
               <div class="object-name">
-                <b>证据区域</b>
+                <b>${event.title}</b>
                 <span>${categorySummary}</span>
               </div>
-              <div class="confidence">${Math.round(timing.grounding)} ms</div>
             </div>
             <div class="reason">${escapeHtml(timing.rationale)}</div>
-            <div class="action-note">图像理解 ${Math.round(timing.understanding)} ms，证据定位 ${Math.round(timing.grounding)} ms，总耗时 ${Math.round(timing.total)} ms。</div>
+            <div class="action-note">${event.action}</div>
           </article>
         `;
-        results.innerHTML = detectionCard + normalized.slice(0, 3).map((item) => {
-          const detail = eventCatalog[item.event];
-          return `
-            <article class="object-card">
-              <div class="object-top">
-                <div class="object-name">
-                  <b>${detail.title}</b>
-                  <span>${detail.detail}</span>
-                </div>
-                <div class="confidence">${Math.round(item.score * 100)}%</div>
-              </div>
-              <div class="reason">${detail.reason}</div>
-              <div class="action-note">${detail.action}</div>
-            </article>
-          `;
-        }).join("");
+        results.innerHTML = summaryCard;
       }
 
       async function recognizeImageElement(image) {
@@ -1204,7 +1181,6 @@
           await new Promise((resolve) => window.setTimeout(resolve, 80));
         }
         const groundedAt = performance.now();
-        const modelSuffix = analysis.model ? `（${analysis.model}）` : "";
         return {
           predictions: analysis.predictions,
           detections: analysis.regions,
@@ -1212,7 +1188,7 @@
             understanding: understoodAt - start,
             grounding: groundedAt - understoodAt,
             total: groundedAt - start,
-            rationale: `${analysis.rationale}${modelSuffix}`
+            rationale: analysis.rationale
           }
         };
       }
