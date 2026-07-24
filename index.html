@@ -892,7 +892,11 @@
         if (mode === "raw") {
           caption.textContent = rawCaption;
           stageStatus.textContent = "基础画面";
+          eventCount.textContent = "基础画面";
           boxCount.textContent = "--";
+          inferenceTime.textContent = "--";
+          results.innerHTML = "";
+          workOrderText.textContent = "基础画面仅用于查看固定机位视角；切换到识别结果后生成事件判断和处置建议。";
           return;
         }
         stageStatus.textContent = currentImage.title;
