@@ -691,7 +691,7 @@
               <b>识别中</b>
               <span>正在读取现场画面并判断异常事件。</span>
             </div>
-            <div class="image-caption" id="caption">桶旁出现成堆垃圾袋和纸箱，系统识别为堆放风险并生成现场说明。</div>
+            <div class="image-caption" id="caption">正在分析现场画面，完成后将在这里显示现场说明。</div>
           </div>
           <div class="customer-gallery" id="customerGallery"></div>
         </section>
@@ -719,7 +719,7 @@
             <h2 class="panel-title">工单建议</h2>
           </div>
           <div class="panel-body">
-            <p class="footnote" id="workOrderText">当前点位建议进入“堆放复核”流程。系统可结合摄像头画面、清运计划和投放记录生成闭环工单。</p>
+            <p class="footnote" id="workOrderText">正在读取现场画面，完成后将生成可复核的处置建议。</p>
           </div>
         </section>
       </main>
@@ -867,6 +867,8 @@
         regions: [],
         rationale: "上传图片需要云端接口返回后生成证据区域；当前静态页面先展示结构化分析流程。"
       };
+      const loadingCaption = "正在分析现场画面，完成后将在这里显示现场说明。";
+      const rawCaption = "基础画面：用于查看固定机位视角、投放点范围和地面警戒区。";
       let currentMode = "result";
       let currentImage = {
         url: customerSamples[0].image,
@@ -888,12 +890,11 @@
         analysisOverlay.classList.toggle("hidden", mode === "raw");
         detectionLayer.classList.toggle("hidden", mode === "raw");
         if (mode === "raw") {
-          caption.textContent = "基础画面：用于查看固定机位视角、投放点范围和地面警戒区。";
+          caption.textContent = rawCaption;
           stageStatus.textContent = "基础画面";
           boxCount.textContent = "--";
           return;
         }
-        caption.textContent = currentImage.caption;
         stageStatus.textContent = currentImage.title;
         recognizeCurrentImage(options.runId);
       }
@@ -921,7 +922,6 @@
         };
         sceneImage.src = sample.image;
         sceneImage.alt = sample.status;
-        caption.textContent = sample.caption;
         stageStatus.textContent = sample.status;
         setActiveSample(index);
         setActiveGallery(index);
@@ -949,13 +949,16 @@
         boxCount.textContent = "--";
         inferenceTime.textContent = "--";
         eventCount.textContent = "分析中";
-        caption.textContent = captionText;
+        caption.textContent = loadingCaption;
         stageStatus.textContent = title;
         return analysisRunId;
       }
 
       function setLoadingState(message = "正在读取现场画面并进行智能分析。") {
         analysisOverlay.innerHTML = `<b>分析中</b><span>${message}</span>`;
+        if (currentMode === "result") {
+          caption.textContent = loadingCaption;
+        }
         eventCount.textContent = "分析中";
         inferenceTime.textContent = "--";
         boxCount.textContent = "--";
@@ -1144,6 +1147,7 @@
         const categorySummary = summarizeDetections(detections);
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
         analysisOverlay.innerHTML = `<b>${event.title}</b><span>${event.detail}</span><span>证据区域：${categorySummary}</span><span>${event.action}</span>`;
+        caption.textContent = timing.rationale;
         eventCount.textContent = top.event === "pileup" ? "发现堆放" : "未发现堆放";
         workOrderText.textContent = workOrderCopy[top.event];
         const summaryCard = `
@@ -1206,7 +1210,7 @@
           if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url) return;
           imageSize.textContent = `${image.naturalWidth} × ${image.naturalHeight}`;
           const result = await recognizeImageElement(image);
-          if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url) return;
+          if (runId !== analysisRunId || imageUrlAtStart !== currentImage.url || currentMode !== "result") return;
           renderDetections(sceneImage.naturalWidth ? sceneImage : image, result.detections);
           renderPrediction(result.predictions, result.detections, result.timing);
         } catch (error) {
@@ -1257,7 +1261,7 @@
           try {
             if (runId !== analysisRunId || currentImage.url !== url) return;
             const result = await recognizeImageElement(sceneImage);
-            if (runId !== analysisRunId || currentImage.url !== url) return;
+            if (runId !== analysisRunId || currentImage.url !== url || currentMode !== "result") return;
             renderDetections(sceneImage, result.detections);
             renderPrediction(result.predictions, result.detections, result.timing);
           } catch (error) {
@@ -1273,7 +1277,7 @@
         };
         sceneImage.src = url;
         sceneImage.alt = "上传的现场截图";
-        caption.textContent = currentImage.caption;
+        caption.textContent = loadingCaption;
         stageStatus.textContent = "现场截图";
         showRaw.classList.remove("active");
         showResult.classList.add("active");
