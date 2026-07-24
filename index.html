@@ -789,7 +789,7 @@
               <div class="legend">
                 <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>关注区域：重点分析的投放点范围</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>堆放证据：一处或多处不重合的桶旁垃圾袋、纸箱或大件杂物</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：投放点周边清晰、无成堆外置垃圾，不触发工单</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>无堆放输出：完成分析后如未定位桶外堆放，不生成堆放工单</span></div>
               </div>
             </div>
 
@@ -799,7 +799,7 @@
 
         <section class="panel stage">
           <div class="stage-header">
-            <div class="meter"><span class="dot"></span><span id="stageStatus">堆放告警画面 1</span></div>
+            <div class="meter"><span class="dot"></span><span id="stageStatus">现场画面 1</span></div>
             <span class="chip"><strong id="imageSize">1920 × 1080</strong></span>
           </div>
           <div class="image-tabs">
@@ -807,7 +807,7 @@
             <button id="showResult">堆放识别结果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724" alt="堆放告警画面 1" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724c" alt="现场画面 1" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
@@ -832,7 +832,7 @@
           <div class="panel-body">
             <div class="signal-list">
               <div class="signal"><strong>图像理解</strong><b>云端分析</b><span>判断投放点周边是否存在垃圾堆放</span></div>
-              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>可输出一处或多处不重合堆放区域；正常画面不画框</span></div>
+              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>可输出一处或多处不重合堆放区域；未定位堆放时不画框</span></div>
               <div class="signal"><strong>规则约束</strong><b>点位数据</b><span>结合桶内高度、开盖记录和清运计划降低误报</span></div>
               <div class="signal"><strong>处置建议</strong><b>工单语言</b><span>把视觉判断转换为现场可执行的复核动作</span></div>
             </div>
@@ -901,7 +901,7 @@
         },
         normal: {
           title: "未发现堆放",
-          detail: "投放点状态正常",
+          detail: "投放点周边未定位堆放",
           reason: "投放点周边未发现成堆垃圾袋、纸箱或大件杂物，不应触发堆放类工单。",
           action: "建议保持常规巡检频次，结合桶内高度和清运计划持续观察。"
         }
@@ -912,7 +912,7 @@
         normal: "当前点位未发现堆放风险，不生成堆放类工单。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
-      const dashboardAssetVersion = "rb-pileup-20260724b";
+      const dashboardAssetVersion = "rb-pileup-20260724c";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const pageParams = new URLSearchParams(window.location.search);
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
@@ -921,53 +921,53 @@
 
       const customerSamples = [
         {
-          title: "告警画面 1",
+          title: "现场画面 1",
           event: "pileup",
-          status: "堆放告警画面 1",
+          status: "现场画面 1",
           image: withAssetVersion("./customer-scenes/overflow-yard-pile.jpg"),
-          caption: "桶旁出现成堆垃圾袋和纸箱，系统识别为堆放风险并生成现场说明。"
+          caption: "固定机位现场画面 1，等待系统完成智能分析。"
         },
         {
-          title: "告警画面 2",
+          title: "现场画面 2",
           event: "pileup",
-          status: "堆放告警画面 2",
+          status: "现场画面 2",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
-          caption: "投放点前出现大袋垃圾和纸盒集中堆放，系统识别为堆放风险。"
+          caption: "固定机位现场画面 2，等待系统完成智能分析。"
         },
         {
-          title: "多处堆放",
+          title: "现场画面 3",
           event: "pileup",
-          status: "多处堆放画面",
+          status: "现场画面 3",
           image: withAssetVersion("./customer-scenes/multi-pile-separate.jpg"),
-          caption: "画面中存在两处彼此分离的桶外垃圾堆放，系统应分别输出证据区域。"
+          caption: "固定机位现场画面 3，等待系统完成智能分析。"
         },
         {
-          title: "低照度堆放",
+          title: "现场画面 4",
           event: "pileup",
-          status: "低照度堆放画面",
+          status: "现场画面 4",
           image: withAssetVersion("./customer-scenes/low-light-pile.jpg"),
-          caption: "夜间或低照度条件下仍保留堆放主体，系统继续输出堆放证据。"
+          caption: "固定机位现场画面 4，等待系统完成智能分析。"
         },
         {
-          title: "大雨堆放",
+          title: "现场画面 5",
           event: "pileup",
-          status: "大雨堆放画面",
+          status: "现场画面 5",
           image: withAssetVersion("./customer-scenes/heavy-rain-pile.jpg"),
-          caption: "大雨遮挡和地面反光条件下，系统仍围绕桶外堆放主体生成判断。"
+          caption: "固定机位现场画面 5，等待系统完成智能分析。"
         },
         {
-          title: "正常画面 1",
+          title: "现场画面 6",
           event: "normal",
-          status: "正常巡检画面 1",
+          status: "现场画面 6",
           image: withAssetVersion("./customer-scenes/normal-site.jpg"),
-          caption: "投放点周边没有成堆垃圾袋或纸箱，系统保持正常状态，不触发堆放工单。"
+          caption: "固定机位现场画面 6，等待系统完成智能分析。"
         },
         {
-          title: "正常画面 2",
+          title: "现场画面 7",
           event: "normal",
-          status: "正常巡检画面 2",
+          status: "现场画面 7",
           image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
-          caption: "道路和投放点周边没有成堆垃圾，系统保持正常巡检状态。"
+          caption: "固定机位现场画面 7，等待系统完成智能分析。"
         }
       ];
 
