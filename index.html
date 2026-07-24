@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>垃圾投放点智能巡检平台</title>
+    <title>桶外堆放智能识别</title>
     <style>
       :root {
         color-scheme: dark;
@@ -115,6 +115,96 @@
         display: grid;
         grid-template-columns: 310px minmax(360px, 1fr) 380px;
         gap: 16px;
+      }
+
+      .feature-tabs {
+        max-width: 1500px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 14px 22px 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .feature-tab {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(20, 34, 31, 0.72);
+        color: var(--muted);
+        padding: 12px;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .feature-tab strong,
+      .feature-tab span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .feature-tab strong {
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .feature-tab span {
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .feature-tab.active {
+        border-color: var(--lime);
+        background: rgba(184, 242, 93, 0.16);
+      }
+
+      .feature-tab.active strong {
+        color: var(--lime);
+      }
+
+      .feature-tab.developing {
+        border-style: dashed;
+      }
+
+      .feature-tab.developing span {
+        color: var(--amber);
+      }
+
+      .development-panel {
+        max-width: 1500px;
+        width: calc(100% - 44px);
+        margin: 18px auto 28px;
+        min-height: 560px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        text-align: center;
+      }
+
+      .development-panel.active {
+        display: flex;
+      }
+
+      .development-content {
+        max-width: 520px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .development-content b {
+        color: var(--lime);
+        font-size: 20px;
+      }
+
+      .development-content span {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
       }
 
       .panel {
@@ -587,10 +677,16 @@
 
       @media (max-width: 760px) {
         .header-inner,
-        main {
+        main,
+        .feature-tabs {
           grid-template-columns: 1fr;
           padding-left: 14px;
           padding-right: 14px;
+        }
+
+        .development-panel {
+          width: calc(100% - 28px);
+          min-height: 420px;
         }
 
         .status-strip {
@@ -612,8 +708,8 @@
       <header>
         <div class="header-inner">
           <div>
-            <h1>垃圾投放点智能巡检平台</h1>
-            <p class="subtitle">面向固定投放点截图，识别桶旁垃圾堆放并输出现场说明；正常画面不触发工单。</p>
+            <h1>桶外堆放智能识别</h1>
+            <p class="subtitle">当前演示只聚焦“垃圾投放点周边桶外堆放”：明确堆放才画框并生成复核建议，正常画面不触发工单。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
@@ -625,10 +721,36 @@
         </div>
       </header>
 
-      <main>
+      <nav class="feature-tabs" aria-label="巡检能力">
+        <button class="feature-tab active" type="button" data-feature="pileup">
+          <strong>桶外堆放识别</strong>
+          <span>当前可演示</span>
+        </button>
+        <button class="feature-tab developing" type="button" data-feature="overflow">
+          <strong>满溢识别</strong>
+          <span>开发中</span>
+        </button>
+        <button class="feature-tab developing" type="button" data-feature="scattered">
+          <strong>散落物识别</strong>
+          <span>开发中</span>
+        </button>
+        <button class="feature-tab developing" type="button" data-feature="sorting">
+          <strong>分类投放复核</strong>
+          <span>开发中</span>
+        </button>
+      </nav>
+
+      <section class="panel development-panel" id="developmentPanel" aria-live="polite">
+        <div class="development-content">
+          <b id="developmentTitle">能力开发中</b>
+          <span id="developmentCopy">该能力正在接入现场标准、样本数据和处置规则；当前演示请查看“桶外堆放识别”。</span>
+        </div>
+      </section>
+
+      <main id="analysisWorkspace">
         <section class="panel">
           <div class="panel-header">
-            <h2 class="panel-title">现场画面与数据</h2>
+            <h2 class="panel-title">堆放识别输入</h2>
           </div>
           <div class="panel-body">
             <div class="control-group">
@@ -658,7 +780,7 @@
             </div>
 
             <div class="control-group">
-              <label>现场案例</label>
+              <label>堆放识别案例</label>
               <div class="sample-list" id="sampleList"></div>
             </div>
 
@@ -667,11 +789,11 @@
               <div class="legend">
                 <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>关注区域：重点分析的投放点范围</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>堆放证据：桶旁成堆垃圾袋、纸箱或大件杂物</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：投放点周边无明显堆放，不触发工单</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：投放点周边清晰、无成堆外置垃圾，不触发工单</span></div>
               </div>
             </div>
 
-            <p class="footnote">当前 demo 聚焦“桶旁/点位外垃圾堆放”能力：有堆放才画框，正常画面不画框也不派单。</p>
+            <p class="footnote">当前 demo 只展示“桶外堆放识别”。满溢、散落物、分类复核等能力以顶部开发中 tab 呈现，不混入本场景。</p>
           </div>
         </section>
 
@@ -698,7 +820,7 @@
 
         <section class="panel right">
           <div class="panel-header">
-            <h2 class="panel-title">事件判断</h2>
+            <h2 class="panel-title">堆放判断</h2>
             <span class="chip"><strong id="eventCount">识别中</strong></span>
           </div>
           <div class="panel-body">
@@ -745,6 +867,30 @@
       const fileInput = document.getElementById("fileInput");
       const sampleList = document.getElementById("sampleList");
       const customerGallery = document.getElementById("customerGallery");
+      const analysisWorkspace = document.getElementById("analysisWorkspace");
+      const developmentPanel = document.getElementById("developmentPanel");
+      const developmentTitle = document.getElementById("developmentTitle");
+      const developmentCopy = document.getElementById("developmentCopy");
+      const featureTabs = [...document.querySelectorAll(".feature-tab")];
+
+      const featureCatalog = {
+        pileup: {
+          title: "桶外堆放识别",
+          copy: "当前演示只聚焦投放点周边桶外堆放，支持画面分析、证据区域和复核建议。"
+        },
+        overflow: {
+          title: "满溢识别开发中",
+          copy: "该能力需要结合桶体型号、桶口高度、视角遮挡和清运标准继续校准，当前不混入桶外堆放演示。"
+        },
+        scattered: {
+          title: "散落物识别开发中",
+          copy: "该能力需要区分纸屑、污渍、阴影、落叶和真实散落垃圾，当前不作为客户演示能力。"
+        },
+        sorting: {
+          title: "分类投放复核开发中",
+          copy: "该能力需要接入分类规则、品类样本和人工复核闭环，当前仅保留为能力入口。"
+        }
+      };
 
       const eventCatalog = {
         pileup: {
@@ -799,13 +945,6 @@
           title: "正常画面 2",
           event: "normal",
           status: "正常巡检画面 2",
-          image: withAssetVersion("./customer-scenes/normal-clean-01.jpg"),
-          caption: "固定机位显示投放点周边无明显堆放，系统输出未发现堆放。"
-        },
-        {
-          title: "正常画面 3",
-          event: "normal",
-          status: "正常巡检画面 3",
           image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
           caption: "道路和投放点周边没有成堆垃圾，系统保持正常巡检状态。"
         }
@@ -840,14 +979,6 @@
           ],
           regions: [],
           rationale: "投放点周边没有成堆垃圾袋、纸箱或大件杂物，画面应保持正常状态。"
-        },
-        {
-          predictions: [
-            { event: "normal", score: 0.95 },
-            { event: "pileup", score: 0.05 }
-          ],
-          regions: [],
-          rationale: "投放点周边为空，地面虽有阴影和轻微痕迹，但没有达到垃圾堆放定义。"
         },
         {
           predictions: [
@@ -930,6 +1061,26 @@
         setActiveSample(index);
         setActiveGallery(index);
         setMode("result", { runId });
+      }
+
+      function showFeature(feature) {
+        const featureInfo = featureCatalog[feature] || featureCatalog.pileup;
+        featureTabs.forEach((button) => {
+          button.classList.toggle("active", button.dataset.feature === feature);
+        });
+        if (feature === "pileup") {
+          developmentPanel.classList.remove("active");
+          analysisWorkspace.style.display = "";
+          modelStatus.textContent = modelReady ? modelStatus.textContent : "连接中";
+          return;
+        }
+        analysisRunId += 1;
+        developmentTitle.textContent = featureInfo.title;
+        developmentCopy.textContent = featureInfo.copy;
+        developmentPanel.classList.add("active");
+        analysisWorkspace.style.display = "none";
+        inferenceTime.textContent = "--";
+        boxCount.textContent = "--";
       }
 
       function loadImage(url) {
@@ -1254,6 +1405,9 @@
       rawButton.addEventListener("click", () => setMode("raw"));
       showResult.addEventListener("click", () => setMode("result"));
       resultButton.addEventListener("click", () => setMode("result"));
+      featureTabs.forEach((button) => {
+        button.addEventListener("click", () => showFeature(button.dataset.feature));
+      });
 
       fileInput.addEventListener("change", (event) => {
         const file = event.target.files?.[0];
