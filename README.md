@@ -6,8 +6,9 @@
 
 - 使用客户 RB 原始固定点位截图作为现场案例
 - 展示智能分析的结构化识别结果
-- 输出桶外堆放的可复核证据区域
+- 输出一处或多处桶外堆放的可复核证据区域
 - 对正常巡检画面保持未发现堆放状态，不触发堆放工单
+- 展示低照度、大雨等恶劣画面条件下的堆放识别效果
 - 展示桶内高度、开盖记录、清运计划等现场信号接入项
 - 将视觉判断转换为清运复核和现场处置建议
 - 支持上传现场截图并展示同一套智能分析流程
@@ -114,6 +115,9 @@ https://waste-vision-vlm.densematrix.ai/analyze
 
 - `customer-scenes/overflow-yard-pile.jpg`：桶旁堆放，来源 `GS3821437_0_20260626_045618.jpg`
 - `customer-scenes/bulky-waste-pile.jpg`：袋装堆放，来源 `GS3821437_0_20260627_215529.jpg`
+- `customer-scenes/multi-pile-separate.jpg`：两处不重合堆放，用现有固定机位画面合成，用于验证多框输出
+- `customer-scenes/low-light-pile.jpg`：低照度堆放，用现有堆放画面增强生成，用于验证夜间/暗光效果
+- `customer-scenes/heavy-rain-pile.jpg`：大雨堆放，用现有堆放画面增强生成，用于验证雨幕和地面反光效果
 - `customer-scenes/normal-site.jpg`：正常巡检画面
 - `customer-scenes/normal-clean-01.jpg`：正常巡检画面
 - `customer-scenes/normal-clean-02.jpg`：正常巡检画面

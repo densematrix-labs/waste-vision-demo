@@ -709,7 +709,7 @@
         <div class="header-inner">
           <div>
             <h1>桶外堆放智能识别</h1>
-            <p class="subtitle">当前演示只聚焦“垃圾投放点周边桶外堆放”：明确堆放才画框并生成复核建议，正常画面不触发工单。</p>
+            <p class="subtitle">当前演示只聚焦“垃圾投放点周边桶外堆放”：支持一处或多处不重合堆放证据，明确堆放才画框并生成复核建议。</p>
           </div>
           <div class="status-strip">
             <span class="chip">画面 <strong>固定机位</strong></span>
@@ -788,7 +788,7 @@
               <label>识别边界</label>
               <div class="legend">
                 <div class="legend-item"><span class="swatch" style="background:var(--cyan)"></span><span>关注区域：重点分析的投放点范围</span></div>
-                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>堆放证据：桶旁成堆垃圾袋、纸箱或大件杂物</span></div>
+                <div class="legend-item"><span class="swatch" style="background:var(--amber)"></span><span>堆放证据：一处或多处不重合的桶旁垃圾袋、纸箱或大件杂物</span></div>
                 <div class="legend-item"><span class="swatch" style="background:var(--lime)"></span><span>正常状态：投放点周边清晰、无成堆外置垃圾，不触发工单</span></div>
               </div>
             </div>
@@ -832,7 +832,7 @@
           <div class="panel-body">
             <div class="signal-list">
               <div class="signal"><strong>图像理解</strong><b>云端分析</b><span>判断投放点周边是否存在垃圾堆放</span></div>
-              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>只输出堆放区域；正常画面不画框</span></div>
+              <div class="signal"><strong>证据定位</strong><b>区域证据</b><span>可输出一处或多处不重合堆放区域；正常画面不画框</span></div>
               <div class="signal"><strong>规则约束</strong><b>点位数据</b><span>结合桶内高度、开盖记录和清运计划降低误报</span></div>
               <div class="signal"><strong>处置建议</strong><b>工单语言</b><span>把视觉判断转换为现场可执行的复核动作</span></div>
             </div>
@@ -912,7 +912,7 @@
         normal: "当前点位未发现堆放风险，不生成堆放类工单。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
-      const dashboardAssetVersion = "rb-pileup-20260724";
+      const dashboardAssetVersion = "rb-pileup-20260724b";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const pageParams = new URLSearchParams(window.location.search);
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
@@ -933,6 +933,27 @@
           status: "堆放告警画面 2",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
           caption: "投放点前出现大袋垃圾和纸盒集中堆放，系统识别为堆放风险。"
+        },
+        {
+          title: "多处堆放",
+          event: "pileup",
+          status: "多处堆放画面",
+          image: withAssetVersion("./customer-scenes/multi-pile-separate.jpg"),
+          caption: "画面中存在两处彼此分离的桶外垃圾堆放，系统应分别输出证据区域。"
+        },
+        {
+          title: "低照度堆放",
+          event: "pileup",
+          status: "低照度堆放画面",
+          image: withAssetVersion("./customer-scenes/low-light-pile.jpg"),
+          caption: "夜间或低照度条件下仍保留堆放主体，系统继续输出堆放证据。"
+        },
+        {
+          title: "大雨堆放",
+          event: "pileup",
+          status: "大雨堆放画面",
+          image: withAssetVersion("./customer-scenes/heavy-rain-pile.jpg"),
+          caption: "大雨遮挡和地面反光条件下，系统仍围绕桶外堆放主体生成判断。"
         },
         {
           title: "正常画面 1",
@@ -971,6 +992,37 @@
             { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 300, y2: 375 }
           ],
           rationale: "投放点前有大袋垃圾和纸盒集中堆放，已经影响点位周边整洁度，建议复核。"
+        },
+        {
+          predictions: [
+            { event: "pileup", score: 0.93 },
+            { event: "normal", score: 0.07 }
+          ],
+          regions: [
+            { label: "pileup", title: "堆放证据", score: 0.93, x1: 42, y1: 126, x2: 270, y2: 374 },
+            { label: "pileup", title: "堆放证据", score: 0.89, x1: 388, y1: 176, x2: 574, y2: 350 }
+          ],
+          rationale: "画面中左侧投放点旁和道路边各有一处成堆垃圾，两个区域彼此分离，应分别进入堆放复核。"
+        },
+        {
+          predictions: [
+            { event: "pileup", score: 0.88 },
+            { event: "normal", score: 0.12 }
+          ],
+          regions: [
+            { label: "pileup", title: "堆放证据", score: 0.88, x1: 40, y1: 126, x2: 250, y2: 382 }
+          ],
+          rationale: "低照度画面中仍可看到桶旁袋装物和纸箱集中堆放，适合触发堆放复核。"
+        },
+        {
+          predictions: [
+            { event: "pileup", score: 0.87 },
+            { event: "normal", score: 0.13 }
+          ],
+          regions: [
+            { label: "pileup", title: "堆放证据", score: 0.87, x1: 40, y1: 126, x2: 252, y2: 382 }
+          ],
+          rationale: "大雨和地面反光未遮蔽桶旁成堆垃圾主体，系统继续输出堆放证据和复核建议。"
         },
         {
           predictions: [
