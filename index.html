@@ -932,8 +932,7 @@
           event: "pileup",
           status: "现场画面 2",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
-          caption: "固定机位现场画面 2，等待系统完成智能分析。",
-          attention: "现场复核线索：画面右侧靠近地面区域可能存在与前方主堆分离的纸箱或杂物堆。请基于真实图像核验，成立才输出独立区域。"
+          caption: "固定机位现场画面 2，等待系统完成智能分析。"
         },
         {
           title: "现场画面 3",
@@ -1154,7 +1153,6 @@
             context: {
               scene: currentImage.title,
               caption: currentImage.caption,
-              attention: currentImage.attention || "",
               signals: {
                 binLevel: "接入",
                 lidOpenEvents: "接入",
@@ -1249,7 +1247,7 @@
         }
         const normalized = normalizePredictions(predictions);
         lastPredictions = normalized;
-        const top = normalized[0];
+        const top = normalized.reduce((best, item) => item.score > best.score ? item : best, normalized[0]);
         const event = eventCatalog[top.event];
         const categorySummary = summarizeDetections(detections);
         inferenceTime.textContent = `${Math.round(timing.total)} ms`;
