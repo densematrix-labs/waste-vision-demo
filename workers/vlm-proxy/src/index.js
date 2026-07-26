@@ -7,67 +7,6 @@ const REGION_TITLES = {
 const MIN_REGION_SCORE = 0.82;
 const MIN_REGION_AREA_RATIO = 0.02;
 
-const DEMO_ANALYSES = {
-  "现场画面 1": {
-    predictions: [
-      { event: "pileup", score: 0.92 },
-      { event: "normal", score: 0.08 }
-    ],
-    regions: [
-      { label: "pileup", title: "堆放证据", score: 0.92, x1: 40, y1: 115, x2: 235, y2: 420 },
-      { label: "pileup", title: "堆放证据", score: 0.86, x1: 235, y1: 220, x2: 345, y2: 360 }
-    ],
-    rationale: "桶旁大面积袋装物和纸箱集中堆放，超过单次正常投放规模，适合触发堆放复核。"
-  },
-  "现场画面 2": {
-    predictions: [
-      { event: "pileup", score: 0.9 },
-      { event: "normal", score: 0.1 }
-    ],
-    regions: [
-      { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 308, y2: 375 },
-      { label: "pileup", title: "堆放证据", score: 0.86, x1: 500, y1: 300, x2: 768, y2: 432 }
-    ],
-    rationale: "投放点前方和画面右下角各有一处疑似桶外堆放，两个区域空间上分离，建议分别进入堆放复核。"
-  },
-  "现场画面 3": {
-    predictions: [
-      { event: "pileup", score: 0.88 },
-      { event: "normal", score: 0.12 }
-    ],
-    regions: [
-      { label: "pileup", title: "堆放证据", score: 0.88, x1: 40, y1: 126, x2: 250, y2: 382 }
-    ],
-    rationale: "低照度画面中仍可看到桶旁袋装物和纸箱集中堆放，适合触发堆放复核。"
-  },
-  "现场画面 4": {
-    predictions: [
-      { event: "pileup", score: 0.87 },
-      { event: "normal", score: 0.13 }
-    ],
-    regions: [
-      { label: "pileup", title: "堆放证据", score: 0.87, x1: 40, y1: 126, x2: 252, y2: 382 }
-    ],
-    rationale: "大雨和地面反光未遮蔽桶旁成堆垃圾主体，系统继续输出堆放证据和复核建议。"
-  },
-  "现场画面 5": {
-    predictions: [
-      { event: "normal", score: 0.94 },
-      { event: "pileup", score: 0.06 }
-    ],
-    regions: [],
-    rationale: "投放点周边没有成堆垃圾袋、纸箱或大件杂物，画面应保持正常状态。"
-  },
-  "现场画面 6": {
-    predictions: [
-      { event: "normal", score: 0.95 },
-      { event: "pileup", score: 0.05 }
-    ],
-    regions: [],
-    rationale: "投放点周边仅有少量零散物和地面痕迹，没有形成成堆垃圾袋、纸箱或大件杂物，不触发堆放工单。"
-  }
-};
-
 function jsonResponse(payload, status = 200, origin = "*") {
   return new Response(JSON.stringify(payload), {
     status,
@@ -157,18 +96,6 @@ function publicErrorMessage(error) {
   return "智能分析失败，请稍后重试或提交人工复核。";
 }
 
-function demoFallbackAnalysis(body) {
-  const scene = String(body?.context?.scene || "");
-  const fallback = DEMO_ANALYSES[scene];
-  if (!fallback) return null;
-  return {
-    ...fallback,
-    model: "demo-fallback",
-    upstreamRequestId: null,
-    fallback: true
-  };
-}
-
 function buildPrompt(width, height, context) {
   return [
     "你是垃圾投放点固定机位巡检系统的桶旁堆放识别模块。",
@@ -180,6 +107,7 @@ function buildPrompt(width, height, context) {
     "如果判断为 normal，regions 必须为空，不要为了展示而画框。",
     "如果判断为 pileup，输出所有主要且彼此分离的堆放证据区域：画面中可能只有一处堆放，也可能有多处不重合堆放。",
     "当存在两处或多处空间上明显分离、各自都能独立触发复核的堆放团块时，必须分别输出多个 regions，不要合并成一个大框。",
+    "必须完整检查画面左侧、中部、右侧和右下边缘；如果右侧或右下角存在与主堆空间分离的疑似垃圾袋、纸箱或大件堆放，也必须单独输出 region。",
     "每个区域只框一个堆放主体或堆放团块，避免重复框同一堆。",
     "证据区域必须紧贴垃圾袋、纸箱、泡沫箱或大件杂物本体；不要框整片地面，不要框垃圾桶本体，不要框道路、墙面、阴影、污渍或背景。",
     "如果多个堆放物彼此接触或明显属于同一堆，合并成一个紧凑框；如果相隔较远，分成多个框。",
@@ -214,7 +142,7 @@ async function callVlm(env, body) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: env.VLM_MODEL || "claude-opus-4.6",
+      model: env.VLM_MODEL || "gemini-2.5-flash",
       response_format: { type: "json_object" },
       temperature: 0.1,
       messages: [
@@ -249,7 +177,7 @@ async function callVlm(env, body) {
     predictions,
     regions,
     rationale: String(parsed.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
-    model: env.VLM_MODEL || "claude-opus-4.6",
+    model: env.VLM_MODEL || "gemini-2.5-flash",
     upstreamRequestId: payload.id || null
   };
 }
@@ -269,11 +197,7 @@ export default {
         return jsonResponse({ error: "image must be a data:image URL" }, 400, origin);
       }
       const startedAt = Date.now();
-      const result = await callVlm(env, body).catch((error) => {
-        const fallback = demoFallbackAnalysis(body);
-        if (fallback) return fallback;
-        throw error;
-      });
+      const result = await callVlm(env, body);
       return jsonResponse({ ...result, elapsedMs: Date.now() - startedAt }, 200, origin);
     } catch (error) {
       return jsonResponse({ error: publicErrorMessage(error) }, 502, origin);

@@ -959,7 +959,7 @@
           title: "现场画面 6",
           event: "normal",
           status: "现场画面 6",
-          image: withAssetVersion("./customer-scenes/normal-clean-01.jpg"),
+          image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
           caption: "固定机位现场画面 6，等待系统完成智能分析。"
         }
       ];
@@ -1021,7 +1021,7 @@
             { event: "pileup", score: 0.05 }
           ],
           regions: [],
-          rationale: "投放点周边仅有少量零散物和地面痕迹，没有形成成堆垃圾袋、纸箱或大件杂物，不触发堆放工单。"
+          rationale: "投放点周边未发现成堆垃圾袋、纸箱或大件杂物，不触发堆放工单。"
         }
       ];
 
@@ -1368,22 +1368,13 @@
         }
         const start = performance.now();
         let analysis;
-        let usedLocalFallback = false;
         if (offlinePreviewEnabled) {
           analysis = currentImage.sampleIndex === null ? offlineUploadedImageAnalysis : vlmAnalyses[currentImage.sampleIndex];
         } else {
-          try {
-            analysis = await requestVlmAnalysis(image, currentImage.url);
-          } catch (error) {
-            if (currentImage.sampleIndex === null) {
-              throw error;
-            }
-            analysis = vlmAnalyses[currentImage.sampleIndex];
-            usedLocalFallback = true;
-          }
+          analysis = await requestVlmAnalysis(image, currentImage.url);
         }
         const understoodAt = performance.now();
-        if (offlinePreviewEnabled || usedLocalFallback) {
+        if (offlinePreviewEnabled) {
           await new Promise((resolve) => window.setTimeout(resolve, 80));
         }
         const groundedAt = performance.now();
