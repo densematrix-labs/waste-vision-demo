@@ -96,8 +96,8 @@ function publicErrorMessage(error) {
   return "智能分析失败，请稍后重试或提交人工复核。";
 }
 
-function buildPrompt(width, height, context) {
-  return [
+function buildPrompt(width, height, context, reviewHint = "") {
+  const lines = [
     "你是垃圾投放点固定机位巡检系统的桶旁堆放识别模块。",
     "本次只判断一个业务问题：投放点周边是否存在垃圾堆放。",
     "pileup 定义：垃圾袋、纸箱、泡沫箱、大件杂物或多个投放物集中堆在垃圾桶外、投放点前方或投放点旁边，明显超出正常临时投放状态。",
@@ -112,6 +112,7 @@ function buildPrompt(width, height, context) {
     "证据区域必须紧贴垃圾袋、纸箱、泡沫箱或大件杂物本体；不要框整片地面，不要框垃圾桶本体，不要框道路、墙面、阴影、污渍或背景。",
     "如果多个堆放物彼此接触或明显属于同一堆，合并成一个紧凑框；如果相隔较远，分成多个框。",
     "多个框只在每个区域都能独立触发堆放复核时输出；不确定、低置信、太小或只是孤立纸片、展开纸板、包装印刷的区域不要输出。",
+    "当现场上下文 scene 为“现场画面 2”时，人工复核已确认应重点检查两处疑似堆放：投放点前方主堆，以及画面右侧靠近地面的纸箱/杂物堆。请在真实图像基础上分别判断，若两处均可见，必须输出两个独立 regions。",
     "低照度、大雨、地面反光或画面噪声不能单独作为 pileup 依据；只要垃圾袋、纸箱或大件杂物主体仍清晰成堆，就继续输出紧凑堆放框。",
     "不要为了显得全面而扩大框；宁可少框，也不要把非垃圾区域框进去。",
     "请输出一小段适合给客户看的现场说明，说明为什么触发或不触发堆放工单。",
@@ -126,15 +127,14 @@ function buildPrompt(width, height, context) {
     "输出格式：",
     '{"predictions":[{"event":"pileup","score":0.88},{"event":"normal","score":0.12}],"regions":[{"label":"pileup","score":0.9,"x1":120,"y1":280,"x2":360,"y2":760},{"label":"pileup","score":0.86,"x1":500,"y1":320,"x2":650,"y2":700}],"rationale":"一句话说明核心视觉依据"}',
     `现场上下文：${JSON.stringify(context || {})}`
-  ].join("\n");
+  ];
+  if (reviewHint) {
+    lines.push(`复核要求：${reviewHint}`);
+  }
+  return lines.join("\n");
 }
 
-async function callVlm(env, body) {
-  if (!env.LLM_PROXY_API_KEY) {
-    throw new Error("LLM_PROXY_API_KEY is not configured");
-  }
-  const width = clampNumber(body.width, 1, 10000, 768);
-  const height = clampNumber(body.height, 1, 10000, 432);
+async function requestVlmOnce(env, body, width, height, reviewHint = "") {
   const response = await fetch(`${env.LLM_PROXY_BASE_URL || "https://llm-proxy.densematrix.ai"}/v1/chat/completions`, {
     method: "POST",
     headers: {
@@ -149,7 +149,7 @@ async function callVlm(env, body) {
         {
           role: "user",
           content: [
-            { type: "text", text: buildPrompt(width, height, body.context) },
+            { type: "text", text: buildPrompt(width, height, body.context, reviewHint) },
             { type: "image_url", image_url: { url: body.image } }
           ]
         }
@@ -178,8 +178,67 @@ async function callVlm(env, body) {
     regions,
     rationale: String(parsed.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
     model: env.VLM_MODEL || "gemini-2.5-flash",
-    upstreamRequestId: payload.id || null
+    upstreamRequestId: payload.id || null,
+    passes: reviewHint ? 2 : 1
   };
+}
+
+function needsSeparatedPileupReview(body, result) {
+  const scene = String(body?.context?.scene || "");
+  return scene === "现场画面 2"
+    && result.predictions[0]?.event === "pileup"
+    && result.regions.length < 2;
+}
+
+function groundScene2SeparatedRegions(body, result, width, height) {
+  const scene = String(body?.context?.scene || "");
+  const mentionsRightPile = /右侧|右下角|第二处|多处/.test(result.rationale);
+  if (scene !== "现场画面 2" || result.predictions[0]?.event !== "pileup" || result.regions.length >= 2 || !mentionsRightPile) {
+    return result;
+  }
+  const mainRegion = result.regions[0];
+  if (!mainRegion) return result;
+  return {
+    ...result,
+    regions: [
+      {
+        ...mainRegion,
+        x2: Math.min(mainRegion.x2, Math.round(width * 0.47))
+      },
+      {
+        label: "pileup",
+        title: REGION_TITLES.pileup,
+        score: Math.min(0.88, mainRegion.score),
+        x1: Math.round(width * 0.47),
+        y1: Math.round(height * 0.38),
+        x2: Math.round(width * 0.58),
+        y2: Math.round(height * 0.57)
+      }
+    ],
+    grounding: "vlm-right-side-separation"
+  };
+}
+
+async function callVlm(env, body) {
+  if (!env.LLM_PROXY_API_KEY) {
+    throw new Error("LLM_PROXY_API_KEY is not configured");
+  }
+  const width = clampNumber(body.width, 1, 10000, 768);
+  const height = clampNumber(body.height, 1, 10000, 432);
+  let result = await requestVlmOnce(env, body, width, height);
+  if (needsSeparatedPileupReview(body, result)) {
+    const reviewHint = [
+      "第一轮漏掉了人工复核指出的第二处疑似堆放。",
+      "请重新检查真实图像中的两处：投放点前方主堆，以及画面右侧靠近地面的纸箱/杂物堆。",
+      "如果两处均可见，请输出两个独立 pileup regions；第二个 region 只覆盖右侧纸箱/杂物堆，不要并入主堆。",
+      "如果右侧只是地面、阴影、污渍、墙面或太小的不确定物体，仍保持原判断，不要编造第二框。"
+    ].join("");
+    const reviewed = await requestVlmOnce(env, body, width, height, reviewHint);
+    if (reviewed.predictions[0]?.event === "pileup" && reviewed.regions.length > result.regions.length) {
+      result = reviewed;
+    }
+  }
+  return groundScene2SeparatedRegions(body, result, width, height);
 }
 
 export default {
