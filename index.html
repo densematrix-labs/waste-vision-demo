@@ -915,7 +915,9 @@
       const dashboardAssetVersion = "rb-pileup-20260724c";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
-      const minimumDisplayRegionScore = 0.78;
+      const regionLabelTitles = {
+        pileup: "堆放证据"
+      };
 
       const customerSamples = [
         {
@@ -1114,31 +1116,27 @@
       function normalizeVlmAnalysis(payload) {
         const predictions = Array.isArray(payload?.predictions) ? payload.predictions : [];
         const regions = Array.isArray(payload?.regions) ? payload.regions : [];
-        const topEvent = predictions
+        const cleanPredictions = predictions
+          .filter((item) => eventCatalog[item?.event] && Number.isFinite(item?.score))
           .map((item) => ({
-            event: eventCatalog[item.event] ? item.event : "normal",
-            score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0.01
-          }))
-          .sort((a, b) => b.score - a.score)[0]?.event || "normal";
+            event: item.event,
+            score: item.score
+          }));
+        const topEvent = cleanPredictions[0]?.event || "normal";
         return {
-          predictions: predictions
-            .map((item) => ({
-              event: eventCatalog[item.event] ? item.event : "normal",
-              score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0.01
-            }))
-            .sort((a, b) => b.score - a.score),
+          predictions: cleanPredictions,
           regions: regions
-            .filter((box) => box && Number.isFinite(Number(box.x1)) && Number.isFinite(Number(box.y1)) && Number.isFinite(Number(box.x2)) && Number.isFinite(Number(box.y2)))
+            .filter((box) => box && regionLabelTitles[box.label] && Number.isFinite(box.score) && Number.isFinite(box.x1) && Number.isFinite(box.y1) && Number.isFinite(box.x2) && Number.isFinite(box.y2))
             .map((box) => ({
-              label: String(box.label || "pileup"),
-              title: String(box.title || "堆放证据"),
-              score: Number.isFinite(Number(box.score)) ? Number(box.score) : 0.5,
-              x1: Number(box.x1),
-              y1: Number(box.y1),
-              x2: Number(box.x2),
-              y2: Number(box.y2)
+              label: box.label,
+              title: regionLabelTitles[box.label],
+              score: box.score,
+              x1: box.x1,
+              y1: box.y1,
+              x2: box.x2,
+              y2: box.y2
             }))
-            .filter((box) => topEvent === "pileup" && box.label === "pileup" && box.score >= minimumDisplayRegionScore && box.x2 > box.x1 && box.y2 > box.y1),
+            .filter((box) => topEvent === "pileup" && box.x2 > box.x1 && box.y2 > box.y1),
           rationale: String(payload?.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
           model: String(payload?.model || "云端模型")
         };
@@ -1179,7 +1177,7 @@
         }
         return predictions.map((item) => ({
           event: item.event,
-          score: Math.max(0.01, Math.min(0.99, item.score))
+          score: item.score
         }));
       }
 

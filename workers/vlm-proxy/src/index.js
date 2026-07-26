@@ -1,12 +1,6 @@
 const EVENT_VALUES = new Set(["pileup", "normal"]);
 const REGION_VALUES = new Set(["pileup"]);
 
-const REGION_TITLES = {
-  pileup: "堆放证据"
-};
-const MIN_REGION_SCORE = 0.78;
-const MIN_REGION_AREA_RATIO = 0.006;
-
 function jsonResponse(payload, status = 200, origin = "*") {
   return new Response(JSON.stringify(payload), {
     status,
@@ -36,35 +30,28 @@ function clampNumber(value, min, max, defaultValue) {
 }
 
 function normalizePrediction(item) {
-  const event = EVENT_VALUES.has(item?.event) ? item.event : "normal";
+  if (!EVENT_VALUES.has(item?.event) || !Number.isFinite(item?.score)) {
+    return null;
+  }
   return {
-    event,
-    score: clampNumber(item?.score, 0.01, 0.99, 0.5)
+    event: item.event,
+    score: item.score
   };
 }
 
-function normalizeRegion(item, width, height) {
-  const label = REGION_VALUES.has(item?.label) ? item.label : "pileup";
-  const x1 = Math.round(clampNumber(item?.x1, 0, width, 0));
-  const y1 = Math.round(clampNumber(item?.y1, 0, height, 0));
-  const x2 = Math.round(clampNumber(item?.x2, 0, width, width));
-  const y2 = Math.round(clampNumber(item?.y2, 0, height, height));
+function validateModelRegion(item, width, height) {
+  if (!REGION_VALUES.has(item?.label)) return null;
+  const { score, x1, y1, x2, y2 } = item || {};
+  if (![score, x1, y1, x2, y2].every(Number.isFinite)) return null;
+  if (x1 < 0 || x2 > width || y1 < 0 || y2 > height || x1 >= x2 || y1 >= y2) return null;
   return {
-    label,
-    title: REGION_TITLES[label],
-    score: clampNumber(item?.score, 0.01, 0.99, 0.5),
-    x1: Math.min(x1, x2),
-    y1: Math.min(y1, y2),
-    x2: Math.max(x1, x2),
-    y2: Math.max(y1, y2)
+    label: item.label,
+    score,
+    x1,
+    y1,
+    x2,
+    y2
   };
-}
-
-function isHighQualityRegion(region, width, height) {
-  const boxWidth = Math.max(0, region.x2 - region.x1);
-  const boxHeight = Math.max(0, region.y2 - region.y1);
-  const areaRatio = (boxWidth * boxHeight) / Math.max(1, width * height);
-  return region.score >= MIN_REGION_SCORE && areaRatio >= MIN_REGION_AREA_RATIO;
 }
 
 function extractJson(text) {
@@ -172,13 +159,12 @@ async function callVlm(env, body) {
   const parsed = extractJson(Array.isArray(content) ? content.map((item) => item.text || "").join("\n") : content);
   const predictions = (Array.isArray(parsed.predictions) ? parsed.predictions : [])
     .map(normalizePrediction)
-    .sort((a, b) => b.score - a.score);
+    .filter(Boolean);
   const topEvent = predictions[0]?.event || "normal";
   const regions = topEvent === "pileup"
     ? (Array.isArray(parsed.regions) ? parsed.regions : [])
-        .map((item) => normalizeRegion(item, width, height))
-        .filter((region) => isHighQualityRegion(region, width, height))
-        .slice(0, 6)
+        .map((item) => validateModelRegion(item, width, height))
+        .filter(Boolean)
     : [];
   return {
     predictions,
