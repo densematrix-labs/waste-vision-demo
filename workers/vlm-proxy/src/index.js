@@ -128,6 +128,7 @@ async function callVlm(env, body) {
   const model = env.VLM_MODEL || "gpt-5.4-image-2";
   const requestBody = {
     model,
+    max_tokens: 800,
     response_format: { type: "json_object" },
     messages: [
       {
