@@ -160,12 +160,9 @@ async function callVlm(env, body) {
   const predictions = (Array.isArray(parsed.predictions) ? parsed.predictions : [])
     .map(normalizePrediction)
     .filter(Boolean);
-  const topEvent = predictions[0]?.event || "normal";
-  const regions = topEvent === "pileup"
-    ? (Array.isArray(parsed.regions) ? parsed.regions : [])
-        .map((item) => validateModelRegion(item, width, height))
-        .filter(Boolean)
-    : [];
+  const regions = (Array.isArray(parsed.regions) ? parsed.regions : [])
+    .map((item) => validateModelRegion(item, width, height))
+    .filter(Boolean);
   return {
     predictions,
     regions,

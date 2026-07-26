@@ -1136,7 +1136,7 @@
               x2: box.x2,
               y2: box.y2
             }))
-            .filter((box) => topEvent === "pileup" && box.x2 > box.x1 && box.y2 > box.y1),
+            .filter((box) => box.x2 > box.x1 && box.y2 > box.y1),
           rationale: String(payload?.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
           model: String(payload?.model || "云端模型")
         };
