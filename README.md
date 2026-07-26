@@ -116,8 +116,8 @@ https://waste-vision-vlm.densematrix.ai/analyze
 - `customer-scenes/multi-pile-separate.jpg`：两处不重合堆放，用现有固定机位画面合成，用于验证多框输出
 - `customer-scenes/low-light-pile.jpg`：低照度堆放，用现有堆放画面增强生成，用于验证夜间/暗光效果
 - `customer-scenes/heavy-rain-pile.jpg`：大雨堆放，用现有堆放画面增强生成，用于验证雨幕和地面反光效果
-- `customer-scenes/normal-site.jpg`：正常巡检画面
 - `customer-scenes/normal-clean-01.jpg`：正常巡检画面
+- `customer-scenes/normal-clean-02.jpg`：正常巡检画面
 
 ## 公开数据调查
 
