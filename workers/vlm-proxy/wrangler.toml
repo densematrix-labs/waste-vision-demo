@@ -9,5 +9,5 @@ routes = [
 
 [vars]
 LLM_PROXY_BASE_URL = "https://llm-proxy.densematrix.ai"
-VLM_MODEL = "gpt-4.1"
+VLM_MODEL = "gpt-5.4-image-2"
 ALLOWED_ORIGINS = "https://densematrix-labs.github.io,http://localhost:8099,http://127.0.0.1:8099"

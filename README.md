@@ -43,8 +43,6 @@ https://densematrix-labs.github.io/waste-vision-demo/
 - 返回结构化 JSON，包括事件类型、证据区域、判断依据、置信度和工单建议
 - 记录审计日志，便于复核模型输出是否符合现场事实
 
-离线演示模式保留在 `?offline=1`，只用于上游服务不可用时查看页面交互，不作为默认客户演示路径。
-
 ## 分析代理
 
 Cloudflare Worker 位于：
@@ -120,7 +118,6 @@ https://waste-vision-vlm.densematrix.ai/analyze
 - `customer-scenes/heavy-rain-pile.jpg`：大雨堆放，用现有堆放画面增强生成，用于验证雨幕和地面反光效果
 - `customer-scenes/normal-site.jpg`：正常巡检画面
 - `customer-scenes/normal-clean-01.jpg`：正常巡检画面
-- `customer-scenes/normal-clean-02.jpg`：正常巡检画面
 
 ## 公开数据调查
 

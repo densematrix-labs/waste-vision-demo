@@ -45,10 +45,10 @@ function normalizePrediction(item) {
 
 function normalizeRegion(item, width, height) {
   const label = REGION_VALUES.has(item?.label) ? item.label : "pileup";
-  const x1 = Math.round((clampNumber(item?.x1, 0, 1000, 0) / 1000) * width);
-  const y1 = Math.round((clampNumber(item?.y1, 0, 1000, 0) / 1000) * height);
-  const x2 = Math.round((clampNumber(item?.x2, 0, 1000, 1000) / 1000) * width);
-  const y2 = Math.round((clampNumber(item?.y2, 0, 1000, 1000) / 1000) * height);
+  const x1 = Math.round(clampNumber(item?.x1, 0, width, 0));
+  const y1 = Math.round(clampNumber(item?.y1, 0, height, 0));
+  const x2 = Math.round(clampNumber(item?.x2, 0, width, width));
+  const y2 = Math.round(clampNumber(item?.y2, 0, height, height));
   return {
     label,
     title: REGION_TITLES[label],
@@ -120,13 +120,13 @@ function buildPrompt(width, height, context) {
     "现场说明只使用“桶外堆放”“投放点周边堆放”“未发现堆放”等业务语言，不要使用满溢、散落、脏污等其他类别词。",
     "只输出 JSON，不要输出 markdown，不要解释 JSON 之外的内容。",
     `图片尺寸为 ${width}x${height}。`,
-    "证据区域坐标必须使用 0-1000 归一化坐标系：左上角为 (0,0)，右下角为 (1000,1000)。",
-    "不要输出像素坐标；不要输出超过 0-1000 的坐标；必须保证 x1 < x2 且 y1 < y2。",
+    `证据区域坐标必须使用图片像素坐标：左上角为 (0,0)，右下角为 (${width},${height})。`,
+    `不要输出归一化坐标；x 坐标范围必须为 0-${width}，y 坐标范围必须为 0-${height}；必须保证 x1 < x2 且 y1 < y2。`,
     "事件类别只能从 pileup、normal 中选择。",
     "证据区域 label 只能使用 pileup。",
     "如果没有明确证据区域，regions 返回空数组，不要编造坐标。",
     "输出格式：",
-    '{"predictions":[{"event":"pileup","score":0.88},{"event":"normal","score":0.12}],"regions":[{"label":"pileup","score":0.9,"x1":120,"y1":280,"x2":360,"y2":760},{"label":"pileup","score":0.86,"x1":500,"y1":320,"x2":650,"y2":700}],"rationale":"一句话说明核心视觉依据"}',
+    '{"predictions":[{"event":"pileup","score":0.88},{"event":"normal","score":0.12}],"regions":[{"label":"pileup","score":0.9,"x1":120,"y1":180,"x2":360,"y2":320},{"label":"pileup","score":0.86,"x1":500,"y1":300,"x2":650,"y2":410}],"rationale":"一句话说明核心视觉依据"}',
     `现场上下文：${JSON.stringify(context || {})}`
   ];
   return lines.join("\n");
@@ -138,26 +138,30 @@ async function callVlm(env, body) {
   }
   const width = clampNumber(body.width, 1, 10000, 768);
   const height = clampNumber(body.height, 1, 10000, 432);
+  const model = env.VLM_MODEL || "gpt-5.4-image-2";
+  const requestBody = {
+    model,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: buildPrompt(width, height, body.context) },
+          { type: "image_url", image_url: { url: body.image } }
+        ]
+      }
+    ]
+  };
+  if (!model.startsWith("gpt-5")) {
+    requestBody.temperature = 0.1;
+  }
   const response = await fetch(`${env.LLM_PROXY_BASE_URL || "https://llm-proxy.densematrix.ai"}/v1/chat/completions`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${env.LLM_PROXY_API_KEY}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      model: env.VLM_MODEL || "gpt-4.1",
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: buildPrompt(width, height, body.context) },
-            { type: "image_url", image_url: { url: body.image } }
-          ]
-        }
-      ]
-    })
+    body: JSON.stringify(requestBody)
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -180,7 +184,7 @@ async function callVlm(env, body) {
     predictions,
     regions,
     rationale: String(parsed.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
-    model: env.VLM_MODEL || "gpt-4.1",
+    model,
     upstreamRequestId: payload.id || null
   };
 }
