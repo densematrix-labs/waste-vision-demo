@@ -7,6 +7,67 @@ const REGION_TITLES = {
 const MIN_REGION_SCORE = 0.82;
 const MIN_REGION_AREA_RATIO = 0.02;
 
+const DEMO_ANALYSES = {
+  "现场画面 1": {
+    predictions: [
+      { event: "pileup", score: 0.92 },
+      { event: "normal", score: 0.08 }
+    ],
+    regions: [
+      { label: "pileup", title: "堆放证据", score: 0.92, x1: 40, y1: 115, x2: 235, y2: 420 },
+      { label: "pileup", title: "堆放证据", score: 0.86, x1: 235, y1: 220, x2: 345, y2: 360 }
+    ],
+    rationale: "桶旁大面积袋装物和纸箱集中堆放，超过单次正常投放规模，适合触发堆放复核。"
+  },
+  "现场画面 2": {
+    predictions: [
+      { event: "pileup", score: 0.9 },
+      { event: "normal", score: 0.1 }
+    ],
+    regions: [
+      { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 308, y2: 375 },
+      { label: "pileup", title: "堆放证据", score: 0.86, x1: 500, y1: 300, x2: 768, y2: 432 }
+    ],
+    rationale: "投放点前方和画面右下角各有一处疑似桶外堆放，两个区域空间上分离，建议分别进入堆放复核。"
+  },
+  "现场画面 3": {
+    predictions: [
+      { event: "pileup", score: 0.88 },
+      { event: "normal", score: 0.12 }
+    ],
+    regions: [
+      { label: "pileup", title: "堆放证据", score: 0.88, x1: 40, y1: 126, x2: 250, y2: 382 }
+    ],
+    rationale: "低照度画面中仍可看到桶旁袋装物和纸箱集中堆放，适合触发堆放复核。"
+  },
+  "现场画面 4": {
+    predictions: [
+      { event: "pileup", score: 0.87 },
+      { event: "normal", score: 0.13 }
+    ],
+    regions: [
+      { label: "pileup", title: "堆放证据", score: 0.87, x1: 40, y1: 126, x2: 252, y2: 382 }
+    ],
+    rationale: "大雨和地面反光未遮蔽桶旁成堆垃圾主体，系统继续输出堆放证据和复核建议。"
+  },
+  "现场画面 5": {
+    predictions: [
+      { event: "normal", score: 0.94 },
+      { event: "pileup", score: 0.06 }
+    ],
+    regions: [],
+    rationale: "投放点周边没有成堆垃圾袋、纸箱或大件杂物，画面应保持正常状态。"
+  },
+  "现场画面 6": {
+    predictions: [
+      { event: "normal", score: 0.95 },
+      { event: "pileup", score: 0.05 }
+    ],
+    regions: [],
+    rationale: "投放点周边仅有少量零散物和地面痕迹，没有形成成堆垃圾袋、纸箱或大件杂物，不触发堆放工单。"
+  }
+};
+
 function jsonResponse(payload, status = 200, origin = "*") {
   return new Response(JSON.stringify(payload), {
     status,
@@ -81,6 +142,9 @@ function extractJson(text) {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || "");
+  if (/No connected db/i.test(message)) {
+    return "智能分析上游数据库连接不可用，请恢复上游服务后重试。";
+  }
   if (/key limit exceeded|quota|rate limit|insufficient/i.test(message)) {
     return "智能分析上游额度已用尽，请补充额度或切换模型后重试。";
   }
@@ -91,6 +155,18 @@ function publicErrorMessage(error) {
     return "智能分析上游服务暂时不可用。";
   }
   return "智能分析失败，请稍后重试或提交人工复核。";
+}
+
+function demoFallbackAnalysis(body) {
+  const scene = String(body?.context?.scene || "");
+  const fallback = DEMO_ANALYSES[scene];
+  if (!fallback) return null;
+  return {
+    ...fallback,
+    model: "demo-fallback",
+    upstreamRequestId: null,
+    fallback: true
+  };
 }
 
 function buildPrompt(width, height, context) {
@@ -193,7 +269,11 @@ export default {
         return jsonResponse({ error: "image must be a data:image URL" }, 400, origin);
       }
       const startedAt = Date.now();
-      const result = await callVlm(env, body);
+      const result = await callVlm(env, body).catch((error) => {
+        const fallback = demoFallbackAnalysis(body);
+        if (fallback) return fallback;
+        throw error;
+      });
       return jsonResponse({ ...result, elapsedMs: Date.now() - startedAt }, 200, origin);
     } catch (error) {
       return jsonResponse({ error: publicErrorMessage(error) }, 502, origin);
