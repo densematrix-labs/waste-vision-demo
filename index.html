@@ -915,7 +915,7 @@
       const dashboardAssetVersion = "rb-pileup-20260724c";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
-      const minimumDisplayRegionScore = 0.82;
+      const minimumDisplayRegionScore = 0.78;
 
       const customerSamples = [
         {
@@ -930,7 +930,8 @@
           event: "pileup",
           status: "现场画面 2",
           image: withAssetVersion("./customer-scenes/bulky-waste-pile.jpg"),
-          caption: "固定机位现场画面 2，等待系统完成智能分析。"
+          caption: "固定机位现场画面 2，等待系统完成智能分析。",
+          attention: "现场复核线索：画面右侧靠近地面区域可能存在与前方主堆分离的纸箱或杂物堆。请基于真实图像核验，成立才输出独立区域。"
         },
         {
           title: "现场画面 3",
@@ -1162,6 +1163,7 @@
             context: {
               scene: currentImage.title,
               caption: currentImage.caption,
+              attention: currentImage.attention || "",
               signals: {
                 binLevel: "接入",
                 lidOpenEvents: "接入",
@@ -1299,7 +1301,7 @@
           detections: analysis.regions,
           timing: {
             understanding: understoodAt - start,
-            grounding: groundedAt - understoodAt,
+            rendering: groundedAt - understoodAt,
             total: groundedAt - start,
             rationale: analysis.rationale
           }
