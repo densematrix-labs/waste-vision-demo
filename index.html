@@ -503,19 +503,7 @@
 
       .detection-box::before {
         content: attr(data-label);
-        position: absolute;
-        left: -2px;
-        top: -28px;
-        max-width: 220px;
-        padding: 5px 7px;
-        border-radius: 5px 5px 5px 0;
-        color: #0b1110;
-        background: var(--lime);
-        font-size: 11px;
-        font-weight: 800;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        display: none;
       }
 
       .detection-box.low {
@@ -536,30 +524,30 @@
         background: #fbbf24;
       }
 
+      .stage-summary {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.82fr) 1.18fr;
+        gap: 10px;
+        padding: 0 14px 12px;
+      }
+
       .image-caption {
-        position: absolute;
-        left: 12px;
-        bottom: 12px;
-        max-width: min(560px, calc(100% - 24px));
-        padding: 8px 10px;
+        min-height: 62px;
+        padding: 10px 12px;
         border-radius: 6px;
         color: var(--text);
-        background: rgba(5, 9, 8, 0.76);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(20, 34, 31, 0.72);
+        border: 1px solid var(--line);
         font-size: 12px;
         line-height: 1.5;
       }
 
       .analysis-overlay {
-        position: absolute;
-        right: 12px;
-        top: 12px;
-        width: min(300px, calc(100% - 24px));
-        padding: 12px;
-        border-radius: 8px;
-        background: rgba(5, 9, 8, 0.82);
-        border: 1px solid rgba(184, 242, 93, 0.45);
-        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+        min-height: 62px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: rgba(20, 34, 31, 0.72);
+        border: 1px solid rgba(184, 242, 93, 0.36);
       }
 
       .analysis-overlay.hidden {
@@ -569,15 +557,15 @@
       .analysis-overlay b {
         display: block;
         color: var(--lime);
-        font-size: 15px;
-        margin-bottom: 6px;
+        font-size: 13px;
+        margin-bottom: 4px;
       }
 
       .analysis-overlay span {
         display: block;
         color: var(--muted);
-        font-size: 12px;
-        line-height: 1.5;
+        font-size: 11px;
+        line-height: 1.45;
       }
 
       .customer-gallery {
@@ -697,6 +685,10 @@
           min-height: auto;
         }
 
+        .stage-summary {
+          grid-template-columns: 1fr;
+        }
+
         .customer-gallery {
           grid-template-columns: 1fr 1fr;
         }
@@ -809,6 +801,8 @@
           <div class="image-shell">
             <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724c" alt="现场画面 1" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
+          </div>
+          <div class="stage-summary">
             <div class="analysis-overlay" id="analysisOverlay">
               <b>识别中</b>
               <span>正在读取现场画面并判断异常事件。</span>
