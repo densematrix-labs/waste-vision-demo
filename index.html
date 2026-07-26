@@ -914,9 +914,7 @@
 
       const dashboardAssetVersion = "rb-pileup-20260724c";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
-      const pageParams = new URLSearchParams(window.location.search);
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
-      const offlinePreviewEnabled = pageParams.get("offline") === "1";
       const minimumDisplayRegionScore = 0.82;
 
       const customerSamples = [
@@ -964,75 +962,6 @@
         }
       ];
 
-      const vlmAnalyses = [
-        {
-          predictions: [
-            { event: "pileup", score: 0.92 },
-            { event: "normal", score: 0.08 }
-          ],
-          regions: [
-            { label: "pileup", title: "堆放证据", score: 0.92, x1: 40, y1: 115, x2: 235, y2: 420 },
-            { label: "pileup", title: "堆放证据", score: 0.86, x1: 235, y1: 220, x2: 345, y2: 360 }
-          ],
-          rationale: "桶旁大面积袋装物和纸箱集中堆放，超过单次正常投放规模，适合触发堆放复核。"
-        },
-        {
-          predictions: [
-            { event: "pileup", score: 0.9 },
-            { event: "normal", score: 0.1 }
-          ],
-          regions: [
-            { label: "pileup", title: "堆放证据", score: 0.9, x1: 120, y1: 135, x2: 308, y2: 375 },
-            { label: "pileup", title: "堆放证据", score: 0.86, x1: 500, y1: 300, x2: 768, y2: 432 }
-          ],
-          rationale: "投放点前方和画面右下角各有一处疑似桶外堆放，两个区域空间上分离，建议分别进入堆放复核。"
-        },
-        {
-          predictions: [
-            { event: "pileup", score: 0.88 },
-            { event: "normal", score: 0.12 }
-          ],
-          regions: [
-            { label: "pileup", title: "堆放证据", score: 0.88, x1: 40, y1: 126, x2: 250, y2: 382 }
-          ],
-          rationale: "低照度画面中仍可看到桶旁袋装物和纸箱集中堆放，适合触发堆放复核。"
-        },
-        {
-          predictions: [
-            { event: "pileup", score: 0.87 },
-            { event: "normal", score: 0.13 }
-          ],
-          regions: [
-            { label: "pileup", title: "堆放证据", score: 0.87, x1: 40, y1: 126, x2: 252, y2: 382 }
-          ],
-          rationale: "大雨和地面反光未遮蔽桶旁成堆垃圾主体，系统继续输出堆放证据和复核建议。"
-        },
-        {
-          predictions: [
-            { event: "normal", score: 0.94 },
-            { event: "pileup", score: 0.06 }
-          ],
-          regions: [],
-          rationale: "投放点周边没有成堆垃圾袋、纸箱或大件杂物，画面应保持正常状态。"
-        },
-        {
-          predictions: [
-            { event: "normal", score: 0.95 },
-            { event: "pileup", score: 0.05 }
-          ],
-          regions: [],
-          rationale: "投放点周边未发现成堆垃圾袋、纸箱或大件杂物，不触发堆放工单。"
-        }
-      ];
-
-      const offlineUploadedImageAnalysis = {
-        predictions: [
-          { event: "normal", score: 0.55 },
-          { event: "pileup", score: 0.45 }
-        ],
-        regions: [],
-        rationale: "上传图片需要云端接口返回后生成证据区域；当前静态页面先展示结构化分析流程。"
-      };
       const loadingCaption = "正在分析现场画面，完成后将在这里显示现场说明。";
       const rawCaption = "基础画面：用于查看固定机位视角、投放点范围和地面警戒区。";
       let currentMode = "result";
@@ -1166,12 +1095,7 @@
       }
 
       async function loadVlmAnalyzer() {
-        if (offlinePreviewEnabled) {
-          await new Promise((resolve) => window.setTimeout(resolve, 160));
-          modelStatus.textContent = "离线预览";
-        } else {
-          modelStatus.textContent = "在线";
-        }
+        modelStatus.textContent = "在线";
         modelReady = true;
         await recognizeCurrentImage();
       }
@@ -1367,16 +1291,8 @@
           await modelReadyPromise;
         }
         const start = performance.now();
-        let analysis;
-        if (offlinePreviewEnabled) {
-          analysis = currentImage.sampleIndex === null ? offlineUploadedImageAnalysis : vlmAnalyses[currentImage.sampleIndex];
-        } else {
-          analysis = await requestVlmAnalysis(image, currentImage.url);
-        }
+        const analysis = await requestVlmAnalysis(image, currentImage.url);
         const understoodAt = performance.now();
-        if (offlinePreviewEnabled) {
-          await new Promise((resolve) => window.setTimeout(resolve, 80));
-        }
         const groundedAt = performance.now();
         return {
           predictions: analysis.predictions,
