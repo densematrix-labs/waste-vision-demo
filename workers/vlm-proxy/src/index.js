@@ -145,7 +145,7 @@ async function callVlm(env, body) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: env.VLM_MODEL || "gemini-2.5-flash",
+      model: env.VLM_MODEL || "gpt-4.1",
       response_format: { type: "json_object" },
       temperature: 0.1,
       messages: [
@@ -180,7 +180,7 @@ async function callVlm(env, body) {
     predictions,
     regions,
     rationale: String(parsed.rationale || "云端分析已完成画面理解，并生成结构化识别结果。"),
-    model: env.VLM_MODEL || "gemini-2.5-flash",
+    model: env.VLM_MODEL || "gpt-4.1",
     upstreamRequestId: payload.id || null
   };
 }
