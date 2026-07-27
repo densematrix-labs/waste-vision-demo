@@ -14,13 +14,22 @@ function jsonResponse(payload, status = 200, origin = "*") {
   });
 }
 
-function getAllowedOrigin(request, env) {
-  const origin = request.headers.get("Origin") || "";
-  const allowed = String(env.ALLOWED_ORIGINS || "")
+function getAllowedOrigins(env) {
+  return String(env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getCorsOrigin(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const allowed = getAllowedOrigins(env);
   return allowed.includes(origin) ? origin : allowed[0] || "*";
+}
+
+function isOriginAllowed(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  return getAllowedOrigins(env).includes(origin);
 }
 
 function clampNumber(value, min, max, defaultValue) {
@@ -177,12 +186,18 @@ async function callVlm(env, body) {
 
 export default {
   async fetch(request, env) {
-    const origin = getAllowedOrigin(request, env);
+    const origin = getCorsOrigin(request, env);
     if (request.method === "OPTIONS") {
+      if (!isOriginAllowed(request, env)) {
+        return jsonResponse({ error: "origin not allowed" }, 403, origin);
+      }
       return jsonResponse({ ok: true }, 200, origin);
     }
     if (request.method !== "POST") {
       return jsonResponse({ error: "method not allowed" }, 405, origin);
+    }
+    if (!isOriginAllowed(request, env)) {
+      return jsonResponse({ error: "origin not allowed" }, 403, origin);
     }
     try {
       const body = await request.json();
