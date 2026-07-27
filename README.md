@@ -114,7 +114,6 @@ https://waste-vision-vlm.densematrix.ai/analyze
 - `customer-scenes/overflow-yard-pile.jpg`：桶旁堆放，来源 `GS3821437_0_20260626_045618.jpg`
 - `customer-scenes/bulky-waste-pile.jpg`：袋装堆放，来源 `GS3821437_0_20260627_215529.jpg`
 - `customer-scenes/multi-pile-separate.jpg`：两处不重合堆放，用现有固定机位画面合成，用于验证多框输出
-- `customer-scenes/low-light-pile.jpg`：低照度堆放，由 `bulky-waste-pile.jpg` 同源生成，用于验证同一现场在暗光条件下的多堆放识别稳定性
 - `customer-scenes/heavy-rain-pile.jpg`：大雨堆放，用现有堆放画面增强生成，用于验证雨幕和地面反光效果
 - `customer-scenes/normal-clean-01.jpg`：正常巡检画面
 - `customer-scenes/normal-clean-02.jpg`：正常巡检画面

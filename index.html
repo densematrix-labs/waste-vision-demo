@@ -799,7 +799,7 @@
             <button id="showResult">堆放识别结果</button>
           </div>
           <div class="image-shell">
-            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260724c" alt="现场画面 1" />
+            <img id="sceneImage" src="./customer-scenes/overflow-yard-pile.jpg?v=rb-pileup-20260726-remove-lowlight" alt="现场画面 1" />
             <div class="detection-layer" id="detectionLayer" aria-hidden="true"></div>
           </div>
           <div class="stage-summary">
@@ -906,7 +906,7 @@
         normal: "当前点位未发现堆放风险，不生成堆放类工单。系统可持续结合桶内高度、开盖记录和清运计划观察状态变化。"
       };
 
-      const dashboardAssetVersion = "rb-pileup-20260724c";
+      const dashboardAssetVersion = "rb-pileup-20260726-remove-lowlight";
       const withAssetVersion = (path) => `${path}?v=${dashboardAssetVersion}`;
       const analysisApiUrl = window.WASTE_VISION_ANALYSIS_API_URL || "https://waste-vision-vlm.densematrix.ai/analyze";
       const regionLabelTitles = {
@@ -932,22 +932,15 @@
           title: "现场画面 3",
           event: "pileup",
           status: "现场画面 3",
-          image: withAssetVersion("./customer-scenes/low-light-pile.jpg"),
+          image: withAssetVersion("./customer-scenes/heavy-rain-pile.jpg"),
           caption: "固定机位现场画面 3，等待系统完成智能分析。"
         },
         {
           title: "现场画面 4",
-          event: "pileup",
-          status: "现场画面 4",
-          image: withAssetVersion("./customer-scenes/heavy-rain-pile.jpg"),
-          caption: "固定机位现场画面 4，等待系统完成智能分析。"
-        },
-        {
-          title: "现场画面 5",
           event: "normal",
-          status: "现场画面 5",
+          status: "现场画面 4",
           image: withAssetVersion("./customer-scenes/normal-clean-02.jpg"),
-          caption: "固定机位现场画面 5，等待系统完成智能分析。"
+          caption: "固定机位现场画面 4，等待系统完成智能分析。"
         }
       ];
 
