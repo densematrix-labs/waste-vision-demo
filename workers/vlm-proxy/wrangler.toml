@@ -8,6 +8,6 @@ routes = [
 ]
 
 [vars]
-LLM_PROXY_BASE_URL = "https://llm-proxy.densematrix.ai"
-VLM_MODEL = "gpt-5.4-image-2"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+VLM_MODEL = "moonshotai/kimi-k3"
 ALLOWED_ORIGINS = "https://densematrix-labs.github.io,http://localhost:8099,http://127.0.0.1:8099"

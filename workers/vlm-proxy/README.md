@@ -1,18 +1,18 @@
 # VLM Proxy Worker
 
-Cloudflare Worker for real VLM analysis. The browser posts image data to this Worker; the Worker calls DenseMatrix LLM Proxy and returns structured evidence regions.
+Cloudflare Worker for real VLM analysis. The browser posts image data to this Worker; the Worker calls OpenRouter Kimi K3 and returns structured evidence regions.
 
 Required secret:
 
 ```bash
-LLM_PROXY_API_KEY
+OPENROUTER_API_KEY
 ```
 
 Deploy:
 
 ```bash
 cd workers/vlm-proxy
-npx wrangler secret put LLM_PROXY_API_KEY
+npx wrangler secret put OPENROUTER_API_KEY
 npx wrangler deploy
 ```
 

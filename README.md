@@ -33,7 +33,7 @@ https://densematrix-labs.github.io/waste-vision-demo/
 当前 GitHub Pages 页面默认调用真实云端分析代理，不在浏览器暴露服务端密钥。链路为：
 
 ```bash
-浏览器 → Cloudflare Worker → DenseMatrix LLM Proxy → 多模态模型 → 结构化 JSON → 前端绘制证据区域
+浏览器 → Cloudflare Worker → OpenRouter Kimi K3 → 结构化 JSON → 前端绘制证据区域
 ```
 
 代理服务负责：
@@ -55,7 +55,7 @@ workers/vlm-proxy/
 
 ```bash
 cd workers/vlm-proxy
-npx wrangler secret put LLM_PROXY_API_KEY
+npx wrangler secret put OPENROUTER_API_KEY
 npx wrangler deploy
 ```
 

@@ -83,7 +83,7 @@ function publicErrorMessage(error) {
   if (/key limit exceeded|quota|rate limit|insufficient/i.test(message)) {
     return "智能分析上游额度已用尽，请补充额度或切换模型后重试。";
   }
-  if (/LLM_PROXY_API_KEY/i.test(message)) {
+  if (/OPENROUTER_API_KEY/i.test(message)) {
     return "智能分析服务密钥未配置。";
   }
   if (/upstream model failed/i.test(message)) {
@@ -131,15 +131,17 @@ function buildPrompt(width, height, context) {
 }
 
 async function callVlm(env, body) {
-  if (!env.LLM_PROXY_API_KEY) {
-    throw new Error("LLM_PROXY_API_KEY is not configured");
+  if (!env.OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
   }
   const width = clampNumber(body.width, 1, 10000, 768);
   const height = clampNumber(body.height, 1, 10000, 432);
-  const model = env.VLM_MODEL || "gpt-5.4-image-2";
+  const model = env.VLM_MODEL || "moonshotai/kimi-k3";
   const requestBody = {
     model,
-    max_tokens: 800,
+    max_tokens: 1800,
+    include_reasoning: false,
+    reasoning: { enabled: false },
     response_format: { type: "json_object" },
     messages: [
       {
@@ -151,14 +153,14 @@ async function callVlm(env, body) {
       }
     ]
   };
-  if (!model.startsWith("gpt-5")) {
-    requestBody.temperature = 0.1;
-  }
-  const response = await fetch(`${env.LLM_PROXY_BASE_URL || "https://llm-proxy.densematrix.ai"}/v1/chat/completions`, {
+  requestBody.temperature = 0;
+  const response = await fetch(`${env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1"}/chat/completions`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${env.LLM_PROXY_API_KEY}`,
-      "Content-Type": "application/json"
+      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://densematrix.ai",
+      "X-Title": "DenseMatrix Waste Vision Demo"
     },
     body: JSON.stringify(requestBody)
   });
